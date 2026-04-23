@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Medicine — Interview Analyzer</title>
+<style>
+  /* ─── Base ─── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.75;
+    color: #1a1a1a;
+    background: #f9f7f2;
+    padding: 40px 0 72px 0;
+  }
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 48px 64px 64px 64px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+  }
+  @media (max-width: 700px) { .page { padding: 28px 20px 48px 20px; } }
+
+  /* ─── Doc header ─── */
+  .doc-header {
+    border-bottom: 2px solid #3b3b2f;
+    padding-bottom: 18px;
+    margin-bottom: 32px;
+  }
+  .doc-header .label {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 6px;
+  }
+  .doc-header h1 {
+    font-size: 22pt;
+    font-weight: normal;
+    color: #2a2a1e;
+    margin-bottom: 4px;
+  }
+  .doc-header .sub {
+    font-size: 10pt;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* ─── Input section ─── */
+  .input-section {
+    background: #f5f3ec;
+    border: 1px solid #ddd9cc;
+    border-radius: 6px;
+    padding: 26px 28px 22px 28px;
+    margin-bottom: 32px;
+  }
+  .input-section h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 14px;
+  }
+  .format-hint {
+    background: #fff;
+    border-left: 3px solid #2a5fa0;
+    padding: 10px 14px;
+    font-size: 9pt;
+    color: #444;
+    margin-bottom: 14px;
+    border-radius: 0 4px 4px 0;
+    font-family: Arial, sans-serif;
+  }
+  .format-hint code {
+    font-family: 'Courier New', monospace;
+    background: #eef0f8;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 8.5pt;
+  }
+  textarea {
+    width: 100%;
+    height: 210px;
+    border: 1px solid #d0ccbe;
+    border-radius: 4px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 9pt;
+    line-height: 1.7;
+    resize: vertical;
+    color: #1a1a1a;
+    background: #fdfcf8;
+  }
+  textarea:focus { outline: 2px solid #2a5fa0; border-color: transparent; }
+
+  .speaker-row {
+    display: flex;
+    gap: 14px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .speaker-row label {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #777;
+    letter-spacing: 0.04em;
+  }
+  .speaker-row input {
+    border: 1px solid #d0ccbe;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    width: 150px;
+    background: #fdfcf8;
+  }
+
+  .btn {
+    margin-top: 16px;
+    background: #2a2a1e;
+    color: #fff;
+    border: none;
+    padding: 10px 26px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn:hover { background: #1a1a12; }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid #c0bbae;
+    color: #888;
+    margin-left: 10px;
+  }
+  .btn-secondary:hover { background: #f0ece2; color: #555; }
+
+  #results { display: none; }
+
+  /* ─── Section labels ─── */
+  .section-label {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 16px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ddd9cc;
+  }
+
+  /* ─── Dashboard grid ─── */
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 800px) { .dashboard { grid-template-columns: 1fr 1fr; } }
+
+  .card {
+    background: #f5f3ec;
+    border: 1px solid #ddd9cc;
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .card h3 {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* ─── Score display ─── */
+  .score-big { font-size: 34px; font-weight: normal; color: #2a2a1e; line-height: 1; font-family: Georgia, serif; }
+  .score-label { font-size: 8.5pt; font-family: Arial, sans-serif; color: #888; margin-top: 4px; }
+  .score-bar-wrap { margin-top: 10px; }
+  .score-bar-bg { background: #ddd9cc; border-radius: 99px; height: 6px; margin-bottom: 7px; }
+  .score-bar-fill { height: 6px; border-radius: 99px; background: #2a5fa0; transition: width 0.6s; }
+  .score-row { display: flex; justify-content: space-between; align-items: center; font-size: 8.5pt; font-family: Arial, sans-serif; color: #777; margin-bottom: 2px; }
+  .score-row .score-left { display: flex; align-items: center; gap: 5px; }
+
+  /* ─── Score tooltip ─── */
+  .score-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #ddd9cc;
+    color: #888;
+    font-size: 7.5pt;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    cursor: default;
+    position: relative;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .score-info:hover { background: #2a5fa0; color: #fff; }
+  .score-info .score-tooltip {
+    display: none;
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #2a2a1e;
+    color: #f0ece2;
+    font-size: 8pt;
+    font-family: Arial, sans-serif;
+    font-weight: normal;
+    line-height: 1.5;
+    padding: 8px 11px;
+    border-radius: 5px;
+    width: 210px;
+    z-index: 100;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  .score-info .score-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: #2a2a1e;
+    border-left: 0;
+  }
+  .score-info:hover .score-tooltip { display: block; }
+
+  /* ─── Pie chart ─── */
+  .pie-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  canvas#pieChart { flex-shrink: 0; }
+  .pie-legend { font-size: 9pt; font-family: Arial, sans-serif; width: 100%; }
+  .pie-legend div { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+  .pie-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ─── Filler words ─── */
+  .filler-count { font-size: 28px; font-weight: normal; font-family: Georgia, serif; color: #2a2a1e; }
+  .filler-detail { font-size: 8.5pt; font-family: Arial, sans-serif; color: #888; margin-top: 6px; }
+  .filler-chip {
+    display: inline-block;
+    background: #ffd6d6;
+    border: 1px solid #b02020;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 8pt;
+    margin: 2px;
+    font-family: 'Courier New', monospace;
+    color: #6a0000;
+  }
+
+  /* ─── Question levels ─── */
+  .level-track { margin-top: 4px; }
+  .level-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .level-label-col { width: 90px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px; }
+  .level-label { font-family: Arial, sans-serif; font-size: 9pt; font-weight: bold; color: #555; line-height: 1.2; }
+  .level-sublabel { font-family: Arial, sans-serif; font-size: 7pt; color: #aaa; text-transform: uppercase; letter-spacing: 0.04em; }
+  .level-bar-bg { flex: 1; background: #ddd9cc; border-radius: 99px; height: 8px; }
+  .level-bar-l1 { height: 8px; border-radius: 99px; background: #2176ae; }
+  .level-bar-l2 { height: 8px; border-radius: 99px; background: #2a7a40; }
+  .level-bar-l3 { height: 8px; border-radius: 99px; background: #7b3fa0; }
+  .level-count { width: 20px; text-align: right; font-family: Arial, sans-serif; font-size: 8.5pt; color: #888; }
+  .arc-note { margin-top: 10px; font-size: 8.5pt; font-family: Arial, sans-serif; padding: 7px 11px; border-radius: 4px; }
+  .arc-good { background: #dff5e1; color: #0f4020; border-left: 3px solid #2a7a40; }
+  .arc-warn { background: #fff0d4; color: #5a3a00; border-left: 3px solid #b07a00; }
+  .arc-bad  { background: #ffd6d6; color: #6a0000; border-left: 3px solid #b02020; }
+
+  /* ─── Move chips ─── */
+  .move-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+  .move-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    font-weight: bold;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    vertical-align: middle;
+    white-space: nowrap;
+    opacity: 0.92;
+  }
+  .move-chip .cnt { font-size: 11pt; font-weight: normal; }
+
+  /* ─── Voice analysis ─── */
+  .voice-card { grid-column: span 3; }
+  @media (max-width: 800px) { .voice-card { grid-column: span 2; } }
+  .voice-grid-wrap { border: 1px solid #ddd9cc; border-radius: 6px; overflow: hidden; }
+  .voice-header-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 2px solid #ddd9cc;
+  }
+  .voice-header-cell {
+    padding: 10px 20px;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: bold;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .voice-header-cell.int  { background: #dceaf7; color: #1a4a80; border-right: 1px solid #ddd9cc; }
+  .voice-header-cell.resp { background: #f5e6d0; color: #6b3a1f; }
+  .voice-body-row { display: grid; grid-template-columns: 1fr 1fr; }
+  .voice-col-int  { background: #eef4fb; padding: 16px 20px; border-right: 1px solid #ddd9cc; }
+  .voice-col-resp { background: #fdf0e4; padding: 16px 20px; }
+  .voice-item { margin-bottom: 10px; }
+  .voice-item .vk {
+    font-family: Arial, sans-serif; font-size: 7pt; text-transform: uppercase;
+    letter-spacing: 0.09em; color: #999; margin-bottom: 1px;
+  }
+  .voice-item .vv { font-size: 9.5pt; margin-top: 1px; line-height: 1.45; }
+
+  /* ─── Card subtext ─── */
+  .card-subtext {
+    font-family: Georgia, serif;
+    font-size: 8.5pt;
+    color: #888;
+    font-style: italic;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ede9df;
+  }
+
+  /* ─── Flags ─── */
+  .flag-list { margin-top: 6px; }
+  .flag-item {
+    font-size: 9.5pt;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-family: Georgia, serif;
+  }
+  .flag-missed { background: #fff0d4; border-left: 3px solid #b07a00; }
+  .flag-drift  { background: #fde8d8; border-left: 3px solid #c0622a; }
+  .flag-label  {
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #999;
+    margin-bottom: 3px;
+  }
+  .no-issues { font-size: 9.5pt; color: #999; font-style: italic; font-family: Georgia, serif; }
+
+  /* ─── Legend section ─── */
+  .legend-section {
+    background: #f5f3ec;
+    border: 1px solid #ddd9cc;
+    border-radius: 6px;
+    padding: 20px 24px 18px 24px;
+    margin-bottom: 32px;
+  }
+  .legend-section h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 14px;
+  }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px 24px;
+  }
+  @media (max-width: 700px) { .legend-grid { grid-template-columns: 1fr 1fr; } }
+  .legend-col h3 {
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #ddd;
+  }
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+  .legend-swatch {
+    display: inline-block;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .legend-text strong { display: block; font-size: 8.5pt; }
+  .legend-text span { color: #777; font-size: 8pt; font-style: italic; }
+
+  /* ─── Annotated transcript ─── */
+  .transcript-section { margin-bottom: 36px; }
+  .transcript-section h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  .turn {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 0 16px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #f0ece2;
+  }
+  .turn:last-child { border-bottom: none; }
+
+  .turn-label {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding-top: 2px;
+    color: #2a5fa0;
+  }
+  .turn-label.respondent { color: #4a4a3a; }
+  .turn-label.narrator { color: #aaa; font-weight: normal; font-style: italic; text-transform: none; letter-spacing: 0; font-size: 8pt; }
+  .turn-text { font-size: 10.5pt; line-height: 1.75; }
+
+  /* ─── Highlight styles (matching exemplar) ─── */
+  .highlight { padding: 0 2px; border-radius: 2px; }
+
+  .hl-paraphrase  { background: #fff3b0; border-bottom: 2px solid #d4a800; }
+  .hl-followup    { background: #d4edda; border-bottom: 2px solid #3a8a52; }
+  .hl-personal    { background: #fde8d8; border-bottom: 2px solid #c0622a; }
+  .hl-emotional   { background: #e8d5f5; border-bottom: 2px solid #7b3fa0; }
+  .hl-encourager  { background: #d0ecf7; border-bottom: 2px solid #2176ae; }
+  .hl-summarizing { background: #ffd6d6; border-bottom: 2px solid #b02020; }
+  .hl-onramp      { background: #dff5e1; border-bottom: 2px solid #2a7a40; }
+  .hl-circling    { background: #fff0d4; border-bottom: 2px solid #b07a00; }
+  .hl-memory      { background: #ffe4f0; border-bottom: 2px solid #a0306a; }
+  .hl-filler      { border-bottom: 2.5px dotted #b02020; }
+  .hl-drift       { background: #fde8d8; border-bottom: 2px dashed #c0622a; }
+  .hl-l1          { background: #d0ecf7; border-bottom: 2px solid #2176ae; }
+  .hl-l2          { background: #dff5e1; border-bottom: 2px solid #2a7a40; }
+  .hl-l3          { background: #e8d5f5; border-bottom: 2px solid #7b3fa0; }
+
+  /* ─── Annotation tags (matching exemplar) ─── */
+  .tag {
+    display: inline-block;
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+    white-space: nowrap;
+    opacity: 0.9;
+  }
+  .tag-paraphrase  { background: #fff3b0; color: #7a6000; border: 1px solid #d4a800; }
+  .tag-followup    { background: #d4edda; color: #1e5c30; border: 1px solid #3a8a52; }
+  .tag-personal    { background: #fde8d8; color: #7a3210; border: 1px solid #c0622a; }
+  .tag-emotional   { background: #e8d5f5; color: #4a1a70; border: 1px solid #7b3fa0; }
+  .tag-encourager  { background: #d0ecf7; color: #0d4a72; border: 1px solid #2176ae; }
+  .tag-summarizing { background: #ffd6d6; color: #6a0000; border: 1px solid #b02020; }
+  .tag-onramp      { background: #dff5e1; color: #0f4020; border: 1px solid #2a7a40; }
+  .tag-circling    { background: #fff0d4; color: #5a3a00; border: 1px solid #b07a00; }
+  .tag-bridge      { background: #d1fae5; color: #065f46; border: 1px solid #34d399; }
+  .tag-pivot       { background: #fef3c7; color: #78350f; border: 1px solid #f59e0b; }
+  .tag-memory      { background: #ffe4f0; color: #600030; border: 1px solid #a0306a; }
+  .tag-filler      { background: #ffd6d6; color: #6a0000; border: 1px solid #b02020; }
+  .tag-drift       { background: #fde8d8; color: #7a3210; border: 1px solid #c0622a; }
+  .tag-l1          { background: #d0ecf7; color: #0d4a72; border: 1px solid #2176ae; }
+  .tag-l2          { background: #dff5e1; color: #1e5c30; border: 1px solid #2a7a40; }
+  .tag-l3          { background: #e8d5f5; color: #4a1a70; border: 1px solid #7b3fa0; }
+
+  /* highlight styles for new moves */
+  .hl-bridge  { background: #d1fae5; border-bottom: 2px solid #34d399; }
+  .hl-pivot   { background: #fef3c7; border-bottom: 2px solid #f59e0b; }
+
+  /* ─── Commentary ─── */
+  .commentary-section { margin-bottom: 36px; }
+  .commentary-section h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 20px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #ddd9cc;
+  }
+  .commentary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .commentary-grid { grid-template-columns: 1fr; } }
+  .commentary-block {
+    background: #eef4fb;
+    border: 1px solid #b8d0ea;
+    border-top: 4px solid #2a5fa0;
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .commentary-block.resp {
+    background: #fdf0e4;
+    border-color: #e0c5a0;
+    border-top-color: #8b5e3c;
+  }
+  .commentary-block h4 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1a4a80;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(42,95,160,0.15);
+  }
+  .commentary-block.resp h4 { color: #6b3a1f; border-bottom-color: rgba(139,94,60,0.15); }
+  .comment-item {
+    font-size: 9.5pt;
+    margin-bottom: 9px;
+    padding: 6px 10px 6px 12px;
+    border-left: 3px solid #ddd9cc;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.55;
+    background: rgba(255,255,255,0.5);
+  }
+  .comment-item.strength { border-color: #2a7a40; background: rgba(212,237,218,0.4); }
+  .comment-item.growth   { border-color: #b07a00; background: rgba(255,240,212,0.5); }
+  .comment-item.flag     { border-color: #b02020; background: rgba(255,214,214,0.4); }
+
+  /* ─── Move count summary bar ─── */
+  .move-summary-bar {
+    background: #f5f3ec;
+    border: 1px solid #ddd9cc;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 28px;
+  }
+  .move-summary-bar h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 12px;
+  }
+  .move-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 16px;
+    font-size: 9pt;
+    font-family: Arial, sans-serif;
+  }
+  .move-summary-total {
+    margin-top: 12px;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #666;
+  }
+
+  /* ─── Footer ─── */
+  .doc-footer {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid #ddd9cc;
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    color: #aaa;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ─── DOC HEADER ─── -->
+  <div class="doc-header">
+    <div class="label">Narrative Medicine, Unit 6 &nbsp;|&nbsp; Interview Analyzer</div>
+    <h1>Transcript Feedback Engine</h1>
+    <div class="sub">Paste a speaker-labeled transcript below — get immediate scored feedback on listening moves, question arc, talk time, voice, and more.</div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-section">
+    <h2>Paste Your Transcript</h2>
+    <div class="format-hint">
+      Format: <code>Name: text</code> — e.g. <code>Kaitlin: How did that feel?</code> or <code>Finn: Yeah, so...</code><br>
+      Any casing works. Speaker names just need to be <strong>consistent</strong> across the transcript. Otter.ai exports paste directly — just replace "Speaker 1 / Speaker 2" with actual names first. Timestamps and <code>[brackets]</code> are stripped automatically.
+    </div>
+    <textarea id="transcriptInput" placeholder="Kaitlin: Um, can you tell me a bit about what you do here at school?
+Finn: Sure. So I teach five sections of English...
+Kaitlin: And how has that been going?
+Finn: Really well, actually. I think..."></textarea>
+    <div class="speaker-row">
+      <label>Interviewer name:</label>
+      <input type="text" id="interviewerName" placeholder="e.g. KAITLIN" />
+      <label>Respondent name:</label>
+      <input type="text" id="respondentName" placeholder="e.g. FINN" />
+    </div>
+    <div>
+      <button class="btn" onclick="analyze()">▶ Analyze Transcript</button>
+      <button class="btn btn-secondary" onclick="loadExample()">Load Example</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <!-- DASHBOARD -->
+    <div class="section-label" style="margin-bottom:16px;">Performance Dashboard</div>
+
+    <!-- Row 1: Talk time / Filler / Listening Moves -->
+    <div class="dash-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="card">
+        <h3>Talk Time</h3>
+        <div class="pie-wrap">
+          <canvas id="pieChart" width="130" height="130"></canvas>
+          <div class="pie-legend" id="pieLegend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Filler Words</h3>
+        <div id="fillerDisplay"></div>
+      </div>
+      <div class="card">
+        <h3>Listening Moves</h3>
+        <div id="moveCount"></div>
+      </div>
+    </div>
+
+    <!-- Row 2: Question levels / Scores -->
+    <div class="dash-row" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="card">
+        <h3>Question Level Progression</h3>
+        <div id="levelDisplay"></div>
+      </div>
+      <div class="card">
+        <h3>Performance Scores</h3>
+        <div id="scoreDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Voice analysis full width -->
+    <div style="margin-bottom:14px;">
+      <div class="card">
+        <h3>Voice &amp; Diction Analysis</h3>
+        <div id="voiceDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Row 4: Missed opportunities / Drift -->
+    <div class="dash-row" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:28px;">
+      <div class="card">
+        <h3>Missed Opportunities <span style="font-weight:normal;color:#999;font-size:8pt;">(Interviewer)</span></h3>
+        <p class="card-subtext">Moments where the interviewer had an opening and didn't take it — a rich answer that got no follow-up, two encouragers in a row instead of a question, or a chance to push from Level 2 detail into Level 3 meaning.</p>
+        <div id="missedDisplay"></div>
+      </div>
+      <div class="card">
+        <h3>Tangential Drift <span style="font-weight:normal;color:#999;font-size:8pt;">(Respondent)</span></h3>
+        <p class="card-subtext">How far the respondent strayed from what was actually asked — flagged when an answer wanders into new territory and ends somewhere different from where the question pointed.</p>
+        <div id="driftDisplay"></div>
+      </div>
+    </div>
+
+    <!-- MOVE COUNT SUMMARY -->
+    <div class="move-summary-bar">
+      <h2>Move Count — At a Glance</h2>
+      <div class="move-summary-grid" id="moveSummaryGrid"></div>
+      <div class="move-summary-total" id="moveSummaryTotal"></div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend-section" id="legendSection">
+      <h2>Color-Coded Legend — Listening Moves</h2>
+      <div class="legend-grid" id="legendGrid"></div>
+    </div>
+
+    <!-- ANNOTATED TRANSCRIPT -->
+    <div class="transcript-section">
+      <h2>Annotated Transcript</h2>
+      <div id="annotatedTranscript"></div>
+    </div>
+
+    <!-- TEACHER / STUDENT COMMENTARY -->
+    <div class="commentary-section">
+      <h2>Summary Commentary</h2>
+      <div class="commentary-grid">
+        <div class="commentary-block" id="interviewerCommentary"></div>
+        <div class="commentary-block resp" id="respondentCommentary"></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="doc-footer">
+      <strong>Narrative Medicine, Unit 6 — Interview Analyzer</strong><br>
+      Analysis is pattern-based and should be reviewed with your teacher. Question-level classification (L1–L3) is a starting point for conversation, not a verdict. Move taxonomy follows the Verbal &amp; Structural Cues reference sheet: verbal moves (Paraphrasis, Follow-up, Personal Connection, Reflection/Naming, Nudge of Encouragement, Summarizing, Asking for Specific Memory) and structural moves (On-Ramp, Circling Back, Smooth Bridge, Skilled Pivot). Filler words are marked with a dotted underline.
+    </div>
+
+  </div><!-- /results -->
+
+</div><!-- /page -->
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+
+const FILLERS = ['um','uh','like','you know what i mean','you know','i mean','sort of','kind of','basically','literally','right','okay','so','well','anyway'];
+
+const MOVE_DEFS = [
+  // ── Verbal Moves ──
+  { key:'paraphrase',  label:'Paraphrasis',           color:'#fde68a', cat:'verbal',     patterns:[/\bif i'?m hearing you\b/i,/\bso what you'?re saying\b/i,/\bso you'?re saying\b/i,/\bin other words\b/i,/\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,/\bsounds like\b/i] },
+  { key:'followup',    label:'Follow-up Question',   color:'#bbf7d0', cat:'verbal',     patterns:[] }, // detected structurally
+  { key:'personal',    label:'Personal Connection',  color:'#fecaca', cat:'verbal',     patterns:[/\bfor me\b/i,/\bi also\b/i,/\bi was\b.*\btoo\b/i,/\bsimilar(ly)?\b/i,/\brelates to\b/i,/\bme too\b/i,/\bi can relate\b/i,/\bi('ve| have) (also|been|done|felt)\b/i,/\bfunnily enough\b/i,/\bsame (thing|issue|experience) (happened|as a)\b/i] },
+  { key:'emotional',   label:'Reflection / Naming',  color:'#e9d5ff', cat:'verbal',     patterns:[/\bhow did that (feel|make you)\b/i,/\bwhat was that like\b/i,/\bthat (sounds|seems) (hard|difficult|tough|exciting|scary|frustrating|isolating|lonely)\b/i,/\bhow does that make you feel\b/i,/\bthat (must have been|sounds like it was)\b/i] },
+  { key:'encourager',  label:'Nudge of Encouragement', color:'#bfdbfe', cat:'verbal',   patterns:[/^(yeah\.?|mm-?hmm\.?|uh-?huh\.?|right\.?|sure\.?|okay\.?|yep\.?|mmm\.?|got it\.?|i see\.?|shoot\.?)$/i,/\b(expand|elaborate|say more about|tell me more) (on |about )?that\b/i,/\bcould you (expand|elaborate)\b/i] },
+  { key:'summarizing', label:'Summarizing / Closing', color:'#fed7aa', cat:'verbal',    patterns:[/\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,/\bthat'?s all (i have|the questions)\b/i,/\bthank you (so much|for your time)\b/i,/\banything i haven'?t asked\b/i,/\bunless you'?d like to say more\b/i] },
+  // ── Structural Moves ──
+  { key:'onramp',      label:'On-Ramp',               color:'#a7f3d0', cat:'structural', patterns:[/\bi wanted to ask (about|you)\b/i,/\bone thing i'?ve been (thinking|wondering)\b/i,/\bthat (actually |kind of )?relates\b/i,/\bbuilding on that\b/i,/\byou (spent|mentioned|talked about|said).*\b(so|and|which).*\?(.*)/i] },
+  { key:'circling',    label:'Circling Back',          color:'#fce7f3', cat:'structural', patterns:[/\byou mentioned (earlier|before|that)\b/i,/\bgoing back to\b/i,/\bearlier you (said|mentioned|talked about)\b/i,/\bwe talked about\b/i,/\bcan we go back to\b/i,/\bi want to come back to\b/i] },
+  { key:'bridge',      label:'Smooth Bridge',          color:'#d1fae5', cat:'structural', patterns:[/\bbut first\b/i,/\bbefore (we|i) (move|get|go) (on|to)\b/i,/\byou mentioned.*--- i want to come back\b/i,/\bspeaking of\b/i,/\bthat actually reminds me\b/i,/\bthat connects to\b/i] },
+  { key:'pivot',       label:'Skilled Pivot',          color:'#fef3c7', cat:'structural', patterns:[/\bi want to shift\b/i,/\blet'?s (move|shift|turn) to\b/i,/\bchanging gears\b/i,/\bon a different note\b/i] },
+  { key:'memory',      label:'Asking for Specific Memory', color:'#ddd6fe', cat:'verbal', patterns:[/\bis there a (moment|time|specific|particular)\b/i,/\bcan you think of a time\b/i,/\bdo you remember (when|a time)\b/i,/\btell me about a (specific|particular|time)\b/i,/\bwhat('s| is) a (specific|particular)\b/i] },
+];
+
+// ─────────────────────────────────────────────
+// LEVEL CLASSIFICATION
+// ─────────────────────────────────────────────
+
+function classifyQuestionLevel(q) {
+  const t = q.toLowerCase();
+  // L3: meaning, reflection, significance, why it matters
+  const l3patterns = [/what did (that|this|it) (mean|teach|show|reveal)/,/why did (that|it|this) (stick|matter|affect)/,/how (has|have|did) (that|this|it) (changed|shaped|affected|influenced)/,/what would you (do differently|have done)/,/what do you wish/,/looking back/,/in retrospect/,/what does (that|this) say about/,/what are your thoughts going into/,/how does that make you feel (going|about|in)/,/what matters (most|to you)/,/what (have you|did you) (learned|taken away|realized)/,/why (didn'?t|did) you/,/what would you (carry|keep|change)/,/attributes you (think|should)/];
+  // L2: specifics, details, sequence, who/what/when/where
+  const l2patterns = [/walk me through/,/what happened (first|next|then|after)/,/who was (there|involved)/,/how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,/what (specifically|exactly)/,/tell me more about/,/what did (you|they|he|she) (do|say|decide)/,/how did (it|that|you|they) (work|start|end|begin|happen)/,/what (was|were) (the|your) (process|steps|plan|approach)/,/how has (it|that|being) .{0,30}\?/,/what (does|did) (your|the) (day|week|role|work|schedule)/,/do (we|you) have that many/];
+  // L1: open, safe, introductory
+  const l1patterns = [/what do you do/,/tell me about (yourself|your)/,/how (are|is|was) (things|it|everything|school|work|life)/,/what('s| is) (your|a typical|life|it) like/,/what (brings|got) you (here|to|into)/,/can you (start by|begin by|introduce)/,/who are you/,/like what does your life look like/,/both in and outside/,/introducing yourself/];
+  for (const p of l3patterns) if (p.test(t)) return 3;
+  for (const p of l2patterns) if (p.test(t)) return 2;
+  for (const p of l1patterns) if (p.test(t)) return 1;
+  // heuristic: if it ends with ? and has >6 words, guess by question word
+  if (t.includes('?')) {
+    if (/\b(why|what.*mean|how.*feel|what.*changed|reflect)\b/.test(t)) return 3;
+    if (/\b(how|when|where|who|which|describe|walk|specific|example)\b/.test(t)) return 2;
+    return 1;
+  }
+  return 0;
+}
+
+// ─────────────────────────────────────────────
+// PARSE TRANSCRIPT
+// ─────────────────────────────────────────────
+
+function parseTranscript(raw, interviewer, respondent) {
+  // ── Pre-clean: strip common transcript export artifacts ──
+  let cleaned = raw
+    .replace(/\r\n/g, '\n')
+    // Inline timestamps: [00:01:23] or (00:01:23)
+    .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
+    // Bold markdown: **Name**
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    // Trailing timestamps on speaker lines (Otter: "Kaitlin  0:04")
+    .replace(/\s{2,}\d{1,2}:\d{2}(?::\d{2})?\s*$/gm, '')
+    .replace(/^[ \t]+|[ \t]+$/gm, '');
+
+  const lines = cleaned.split('\n');
+
+  // ── Detect format ──
+  // Format A: "Name: text" on same line  (standard / most exports after cleanup)
+  // Format B: "Name" on one line, text on next (raw Otter.ai export)
+  const formatALines = lines.filter(l => /^[^:\n]{1,40}:\s+\S/.test(l.trim()));
+  const formatBLines = lines.filter(l => /^\S[^:\n]{0,38}$/.test(l.trim()) && l.trim().length < 35);
+  const useFormatB = formatALines.length < 3 && formatBLines.length >= 2;
+
+  const turns = [];
+
+  if (useFormatB) {
+    // Format B: speaker name alone on a line, followed by their text
+    // Known speaker names are short lines that repeat
+    const nameCandidates = {};
+    lines.forEach(l => {
+      const t = l.trim();
+      if (t.length > 0 && t.length < 35 && !/[.!?,]/.test(t) && !/\d{1,2}:\d{2}/.test(t))
+        nameCandidates[t.toUpperCase()] = (nameCandidates[t.toUpperCase()]||0)+1;
+    });
+    // Speaker names appear multiple times
+    const speakerNames = new Set(Object.entries(nameCandidates).filter(([,v])=>v>=2).map(([k])=>k));
+
+    let currentSpeaker = null;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1,-1) }); continue;
+      }
+      if (speakerNames.has(trimmed.toUpperCase())) {
+        currentSpeaker = trimmed.toUpperCase();
+      } else if (currentSpeaker) {
+        turns.push({ speaker: currentSpeaker, text: trimmed });
+        // Don't reset — Otter sometimes puts multiple text lines per speaker
+      } else {
+        if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
+      }
+    }
+  } else {
+    // Format A: "Name: text" or "Name - text" on same line
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1,-1) }); continue;
+      }
+      const speakerMatch = trimmed.match(/^([^:\-—]{1,40}?)[\:\-—]\s+(.+)$/);
+      if (speakerMatch) {
+        const rawLabel = speakerMatch[1].trim();
+        const text = speakerMatch[2].trim();
+        if (/^\d+$/.test(rawLabel) || rawLabel.includes('http')) {
+          if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
+          continue;
+        }
+        if (text) turns.push({ speaker: rawLabel.toUpperCase(), text });
+      } else {
+        if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
+      }
+    }
+  }
+
+  return turns;
+}
+
+// ─────────────────────────────────────────────
+// COUNT FILLERS
+// ─────────────────────────────────────────────
+
+function countFillers(text) {
+  const counts = {};
+  let total = 0;
+  const lower = text.toLowerCase();
+  for (const f of FILLERS) {
+    const re = new RegExp('\\b' + f.replace(/\s+/g,'\\s+') + '\\b','gi');
+    const matches = lower.match(re);
+    if (matches && matches.length) {
+      counts[f] = (counts[f]||0) + matches.length;
+      total += matches.length;
+    }
+  }
+  return { counts, total };
+}
+
+// ─────────────────────────────────────────────
+// DETECT MOVES IN A TURN
+// ─────────────────────────────────────────────
+
+function detectMoves(text, prevRespondentText, isInterviewer) {
+  const moves = [];
+  const lower = text.toLowerCase().trim();
+
+  // Check all pattern-based moves
+  for (const def of MOVE_DEFS) {
+    if (def.key === 'followup') continue;
+    for (const pat of def.patterns) {
+      if (pat.test(lower)) {
+        moves.push(def.key);
+        break;
+      }
+    }
+  }
+
+  // Follow-up: question that references something from previous response
+  if (isInterviewer && text.includes('?') && prevRespondentText) {
+    const prevWords = new Set(prevRespondentText.toLowerCase().split(/\W+/).filter(w => w.length > 4));
+    const thisWords = lower.split(/\W+/);
+    const overlap = thisWords.filter(w => w.length > 4 && prevWords.has(w));
+    if (overlap.length >= 1 && !moves.includes('followup')) {
+      moves.push('followup');
+    }
+  }
+
+  return [...new Set(moves)];
+}
+
+// ─────────────────────────────────────────────
+// DETECT TANGENTIAL DRIFT
+// ─────────────────────────────────────────────
+
+function detectDrift(respondentText, questionText) {
+  if (!questionText || respondentText.split(/\s+/).length < 30) return null;
+  // Extract key nouns from question
+  const qWords = new Set(questionText.toLowerCase().split(/\W+/).filter(w => w.length > 4));
+  const sentences = respondentText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  if (sentences.length < 3) return null;
+  // Check if last 2 sentences share little vocabulary with question
+  const lastTwo = sentences.slice(-2).join(' ').toLowerCase();
+  const lastWords = lastTwo.split(/\W+/).filter(w => w.length > 4);
+  const overlap = lastWords.filter(w => qWords.has(w)).length;
+  if (overlap === 0 && lastWords.length > 8) {
+    // Summarize what the drift was about
+    const driftSnippet = sentences[sentences.length-1].trim().slice(0,80);
+    return `Response may drift toward end — last thought: "${driftSnippet}..."`;
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────
+// VOICE ANALYSIS
+// ─────────────────────────────────────────────
+
+function analyzeVoice(turns, speaker) {
+  const speakerTurns = turns.filter(t => t.speaker === speaker);
+  const allText = speakerTurns.map(t => t.text).join(' ');
+  const words = allText.toLowerCase().split(/\W+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+  if (wordCount < 10) return null;
+
+  // Avg sentence length
+  const sentences = allText.split(/[.!?]+/).filter(s => s.trim().length > 4);
+  const avgSentLen = sentences.length ? Math.round(words.length / sentences.length) : 0;
+
+  // Idiom / figurative language detection
+  const idioms = [
+    'throw the spaghetti','pick yourself up','dust yourself off','center won','things fall apart',
+    'naval gazing','let it rip','bump heads','in the arena','ruffling feathers','tip of the iceberg',
+    'silver lining','bite the bullet','back seat','sidelines','head down','shoulder to the wheel',
+    'on the shelf','hit the ground running','under the radar','move the needle','talk is cheap',
+    'armchair','bell rings','sour grape','nothing stopping','keeping your head','read the room',
+    'fly in the face','close the tab','ground floor','light touch','full steam','move mountains'
+  ];
+  const foundIdioms = idioms.filter(id => allText.toLowerCase().includes(id));
+
+  // Figurative language (simile/metaphor signals)
+  const figPatterns = [/\blike a\b/,/\bas (if|though|a)\b/,/\bis a\b.*\bnot a\b/,/\bmetaphor(ically)?\b/,/\bsymbol\b/];
+  const figCount = figPatterns.filter(p => p.test(allText)).length;
+
+  // Diction level (rough heuristic: ratio of long words)
+  const longWords = words.filter(w => w.length >= 8).length;
+  const dictionLevel = Math.round((longWords / wordCount) * 100);
+  let dictionNote = dictionLevel > 22 ? 'Academic / elevated' : dictionLevel > 14 ? 'Conversational / accessible' : 'Simple / informal';
+
+  // Question ratio (for interviewer)
+  const questionCount = speakerTurns.filter(t => t.text.includes('?')).length;
+  const questionRatio = speakerTurns.length ? Math.round((questionCount / speakerTurns.length) * 100) : 0;
+
+  // Tone signals
+  const wrySignals = ['let me tell you','right?','no?','you get the idea','not that i','as if','supposedly','allegedly','of course','naturally'];
+  const wryCount = wrySignals.filter(w => allText.toLowerCase().includes(w)).length;
+  const toneNote = wryCount >= 2 ? 'Wry / dry wit present' : wryCount === 1 ? 'Occasional dry tone' : 'Relatively neutral';
+
+  // Sentence variety
+  const shortSent = sentences.filter(s => s.trim().split(/\s+/).length < 8).length;
+  const longSent  = sentences.filter(s => s.trim().split(/\s+/).length > 25).length;
+  const varietyNote = shortSent > 0 && longSent > 0 ? 'Good rhythm variation' : longSent > shortSent * 2 ? 'Tends toward long sentences' : 'Tends toward short/clipped sentences';
+
+  return { wordCount, avgSentLen, dictionNote, dictionLevel, foundIdioms, figCount, questionRatio, toneNote, varietyNote };
+}
+
+// ─────────────────────────────────────────────
+// SCORE ENGINE
+// ─────────────────────────────────────────────
+
+function computeScores(turns, interviewer, respondent, moves, levels, fillerTotals) {
+  const interviewerTurns = turns.filter(t => t.speaker === interviewer);
+  const respondentTurns  = turns.filter(t => t.speaker === respondent);
+
+  const totalMoves = Object.values(moves).reduce((a,b) => a+b, 0);
+
+  // Listening presence: move variety + encouragers used appropriately
+  const moveTypes = Object.values(moves).filter(v => v > 0).length;
+  const listeningScore = Math.min(5, Math.round((moveTypes / 6) * 5));
+
+  // Question quality: level distribution + follow-up count
+  const l3count = levels.filter(l => l === 3).length;
+  const l2count = levels.filter(l => l === 2).length;
+  const totalQ  = levels.length;
+  const qScore  = totalQ > 0 ? Math.min(5, Math.round(((l2count + l3count*1.5) / totalQ) * 5)) : 1;
+
+  // Structural flow: arc (L1→L2→L3 progression)
+  let arcScore = 3;
+  if (levels.length >= 3) {
+    const firstThird = levels.slice(0, Math.ceil(levels.length/3));
+    const lastThird  = levels.slice(Math.floor(levels.length*2/3));
+    const avgFirst = firstThird.reduce((a,b)=>a+b,0)/firstThird.length;
+    const avgLast  = lastThird.reduce((a,b)=>a+b,0)/lastThird.length;
+    if (avgLast > avgFirst + 0.4) arcScore = 5;
+    else if (avgLast >= avgFirst) arcScore = 4;
+    else if (avgLast < avgFirst - 0.5) arcScore = 2;
+  }
+
+  // Balance: respondent should have more words
+  const iWords = interviewerTurns.map(t => t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const rWords  = respondentTurns.map(t => t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const totalWords = iWords + rWords;
+  const rPct = totalWords > 0 ? rWords/totalWords : 0.5;
+  let balanceScore;
+  if (rPct >= 0.55 && rPct <= 0.80) balanceScore = 5;
+  else if (rPct >= 0.45 && rPct <= 0.90) balanceScore = 4;
+  else if (rPct >= 0.35 && rPct <= 0.95) balanceScore = 3;
+  else balanceScore = 2;
+
+  // Filler penalty
+  const fillerRate = totalWords > 0 ? (fillerTotals.interviewer / (iWords||1)) : 0;
+  const fillerScore = fillerRate < 0.03 ? 5 : fillerRate < 0.06 ? 4 : fillerRate < 0.10 ? 3 : fillerRate < 0.15 ? 2 : 1;
+
+  const overall = Math.round((listeningScore + qScore + arcScore + balanceScore + fillerScore) / 5 * 10) / 10;
+
+  return { listeningScore, qScore, arcScore, balanceScore, fillerScore, overall, iWords, rWords, totalWords };
+}
+
+// ─────────────────────────────────────────────
+// PIE CHART
+// ─────────────────────────────────────────────
+
+function drawPie(canvas, data) {
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width/2, cy = canvas.height/2, r = 56;
+  const total = data.reduce((a,d)=>a+d.value,0);
+  let angle = -Math.PI/2;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for (const d of data) {
+    const slice = (d.value/total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    angle += slice;
+  }
+}
+
+// ─────────────────────────────────────────────
+// HIGHLIGHT TEXT
+// ─────────────────────────────────────────────
+
+function highlightFillers(text) {
+  let out = text;
+  for (const f of FILLERS) {
+    const re = new RegExp('\\b(' + f.replace(/\s+/g,'\\s+') + ')\\b','gi');
+    out = out.replace(re, `<span class="highlight hl-filler">$1</span>`);
+  }
+  return out;
+}
+
+function highlightMoves(text, moveResults) {
+  let out = text;
+  for (const def of MOVE_DEFS) {
+    if (def.key === 'followup') continue;
+    for (const pat of def.patterns) {
+      out = out.replace(pat, (match) =>
+        `<span class="highlight hl-${def.key}">${match}</span><span class="tag tag-${def.key}">${def.label}</span>`
+      );
+    }
+  }
+  return out;
+}
+
+function highlightQuestionLevel(text, level) {
+  if (!text.includes('?') || level === 0) return text;
+  const cls = `hl-l${level}`;
+  const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
+  const label = levelLabels[level] || `L${level}`;
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  return sentences.map(s => {
+    if (s.includes('?')) return `<span class="highlight ${cls}">${s}</span><span class="tag tag-l${level}">${label}</span>`;
+    return s;
+  }).join(' ');
+}
+
+// ─────────────────────────────────────────────
+// MAIN ANALYZE FUNCTION
+// ─────────────────────────────────────────────
+
+function analyze() {
+  const raw = document.getElementById('transcriptInput').value.trim();
+  if (!raw) { alert('Paste a transcript first.'); return; }
+
+  let interviewer = document.getElementById('interviewerName').value.trim().toUpperCase();
+  let respondent  = document.getElementById('respondentName').value.trim().toUpperCase();
+
+  // Auto-detect if not provided
+  const turns = parseTranscript(raw, interviewer, respondent);
+  const speakers = [...new Set(turns.map(t=>t.speaker).filter(s=>s!=='NARRATOR'))];
+  if (!interviewer && speakers.length >= 1) interviewer = speakers[0];
+  if (!respondent  && speakers.length >= 2) respondent  = speakers[1];
+
+  // ── Talk time ──
+  const iTurns = turns.filter(t=>t.speaker===interviewer);
+  const rTurns = turns.filter(t=>t.speaker===respondent);
+  const iWords = iTurns.map(t=>t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const rWords = rTurns.map(t=>t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const total  = iWords + rWords;
+  const iPct   = total ? Math.round(iWords/total*100) : 50;
+  const rPct   = 100 - iPct;
+
+  // ── Fillers ──
+  const iFillers = countFillers(iTurns.map(t=>t.text).join(' '));
+  const rFillers = countFillers(rTurns.map(t=>t.text).join(' '));
+
+  // ── Moves + levels ──
+  const moveTotals = {};
+  MOVE_DEFS.forEach(d => moveTotals[d.key] = 0);
+  const questionLevels = [];
+  let prevRespondentText = '';
+  const turnMoves = [];
+  const turnLevels = [];
+  const turnDrifts = [];
+  const missedOpps = [];
+
+  let prevWasEncourager = false;
+  let consecutiveEncouragers = 0;
+
+  for (let i = 0; i < turns.length; i++) {
+    const turn = turns[i];
+    const isInt = turn.speaker === interviewer;
+    const isRes = turn.speaker === respondent;
+
+    if (isInt) {
+      const moves = detectMoves(turn.text, prevRespondentText, true);
+      moves.forEach(m => moveTotals[m] = (moveTotals[m]||0)+1);
+      turnMoves.push(moves);
+
+      // Question level
+      const level = classifyQuestionLevel(turn.text);
+      turnLevels.push(level);
+      if (level > 0) questionLevels.push(level);
+
+      // Missed opportunities
+      if (moves.includes('encourager') && !turn.text.includes('?')) {
+        consecutiveEncouragers++;
+        if (consecutiveEncouragers >= 2) {
+          const prevSnippet = prevRespondentText.trim().slice(0, 85);
+          missedOpps.push({ idx: i, text: `Another encourager instead of a question. They said: <em>"${prevSnippet}${prevRespondentText.length > 85 ? '...' : ''}"</em>` });
+          consecutiveEncouragers = 0;
+        }
+      } else {
+        consecutiveEncouragers = 0;
+      }
+
+      // Missed: long respondent turn with no follow-up
+      if (i > 0 && turns[i-1].speaker === respondent) {
+        const prevLen = turns[i-1].text.split(/\s+/).length;
+        if (prevLen > 60 && !moves.includes('followup') && !moves.includes('memory') && !moves.includes('circling')) {
+          // Find something specific in the long answer to quote
+          const sentences = turns[i-1].text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+          const interestingSent = sentences.find(s => /\b(i|my|we|but|actually|when|that|because)\b/i.test(s)) || sentences[0];
+          const quote = (interestingSent || turns[i-1].text).trim().slice(0, 85);
+          missedOpps.push({ idx: i, text: `No follow-up after a long answer. They said: <em>"${quote}${quote.length >= 85 ? '...' : ''}"</em>` });
+        }
+      }
+
+      turnDrifts.push(null);
+    } else if (isRes) {
+      // Drift detection
+      const prevQuestion = turns.slice(0, i).reverse().find(t => t.speaker === interviewer);
+      const drift = prevQuestion ? detectDrift(turn.text, prevQuestion.text) : null;
+      turnDrifts.push(drift);
+      turnMoves.push([]);
+      turnLevels.push(0);
+      prevRespondentText = turn.text;
+    } else {
+      turnMoves.push([]);
+      turnLevels.push(0);
+      turnDrifts.push(null);
+    }
+  }
+
+  // ── Scores ──
+  const scores = computeScores(turns, interviewer, respondent, moveTotals, questionLevels, { interviewer: iFillers.total, respondent: rFillers.total });
+
+  // ── Voice analysis ──
+  const iVoice = analyzeVoice(turns, interviewer);
+  const rVoice = analyzeVoice(turns, respondent);
+
+  // ─────────────── RENDER ───────────────
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // PIE
+  const pieCanvas = document.getElementById('pieChart');
+  const iColor = '#7ec8e3', rColor = '#f4a261'; // pastel sky blue / warm coral
+  drawPie(pieCanvas, [
+    { value: iPct, color: iColor },
+    { value: rPct, color: rColor },
+  ]);
+  document.getElementById('pieLegend').innerHTML = `
+    <div><span class="pie-dot" style="background:${iColor}"></span><strong>${interviewer.charAt(0)+interviewer.slice(1).toLowerCase()}</strong>: ${iPct}%<span style="color:#aaa;margin-left:4px;font-size:8pt;">(${iWords} words)</span></div>
+    <div><span class="pie-dot" style="background:${rColor}"></span><strong>${respondent.charAt(0)+respondent.slice(1).toLowerCase()}</strong>: ${rPct}%<span style="color:#aaa;margin-left:4px;font-size:8pt;">(${rWords} words)</span></div>
+    <div style="margin-top:8px;font-family:Arial,sans-serif;font-size:7.5pt;color:#aaa;border-top:1px solid #eee;padding-top:6px;">Ideal: interviewer speaks ≤ 40% of the time</div>
+  `;
+
+  // FILLERS
+  const topIFillers = Object.entries(iFillers.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topRFillers = Object.entries(rFillers.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('fillerDisplay').innerHTML = `
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div>
+        <div class="filler-count">${iFillers.total}</div>
+        <div class="filler-detail"><strong style="font-family:Arial,sans-serif;letter-spacing:0.05em;text-transform:uppercase;font-size:8pt;">${interviewer.charAt(0)+interviewer.slice(1).toLowerCase()}</strong><br>${topIFillers.map(([w,n])=>`<span class="filler-chip">${w} ×${n}</span>`).join('')||'<em>none detected</em>'}</div>
+      </div>
+      <div>
+        <div class="filler-count">${rFillers.total}</div>
+        <div class="filler-detail"><strong style="font-family:Arial,sans-serif;letter-spacing:0.05em;text-transform:uppercase;font-size:8pt;">${respondent.charAt(0)+respondent.slice(1).toLowerCase()}</strong><br>${topRFillers.map(([w,n])=>`<span class="filler-chip">${w} ×${n}</span>`).join('')||'<em>none detected</em>'}</div>
+      </div>
+    </div>
+  `;
+
+  // MOVE COUNT (dashboard card)
+  const moveHtml = MOVE_DEFS.map(def => {
+    const cnt = moveTotals[def.key] || 0;
+    if (cnt === 0) return '';
+    return `<div class="move-chip tag-${def.key}" style="background:${def.color};border:1px solid;"><span class="cnt">${cnt}</span> ${def.label}</div>`;
+  }).join('');
+  const totalMoves = Object.values(moveTotals).reduce((a,b)=>a+b,0);
+  document.getElementById('moveCount').innerHTML = `
+    <div class="move-grid">${moveHtml || '<em style="font-size:9pt;color:#aaa">No moves detected</em>'}</div>
+  `;
+
+  // MOVE SUMMARY BAR (below dashboard)
+  const verbalDefs    = MOVE_DEFS.filter(d => d.cat === 'verbal');
+  const structDefs    = MOVE_DEFS.filter(d => d.cat === 'structural');
+  const verbHtml  = verbalDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
+  const structHtml= structDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
+  document.getElementById('moveSummaryGrid').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:6px;grid-column:1/-1;">Verbal Moves</div>
+    ${verbHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
+    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-top:10px;margin-bottom:6px;grid-column:1/-1;">Structural Moves</div>
+    ${structHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
+  `;
+  const moveStanding = totalMoves >= 15 ? { label: 'Exceeds Standard', color: '#2a7a40', mark: '✓' }
+    : totalMoves >= 12 ? { label: 'Meets Standard',    color: '#2a5fa0', mark: '✓' }
+    : totalMoves >=  7 ? { label: 'Approaching Standard', color: '#b07a00', mark: '◐' }
+    :                    { label: 'Needs Work',         color: '#b02020', mark: '✗' };
+  document.getElementById('moveSummaryTotal').innerHTML = `<strong>Total annotated moments: ${totalMoves}</strong> &nbsp;·&nbsp; <span style="color:${moveStanding.color};font-weight:bold;">${moveStanding.mark} ${moveStanding.label}</span> &nbsp;<span style="color:#bbb;font-size:7.5pt;">(0–6 Needs Work · 7–9 Approaching · 10–11 Meets · 12–14 Exceeds)</span>`;
+
+  // QUESTION LEVELS
+  const l1 = questionLevels.filter(l=>l===1).length;
+  const l2 = questionLevels.filter(l=>l===2).length;
+  const l3 = questionLevels.filter(l=>l===3).length;
+  const maxL = Math.max(l1,l2,l3,1);
+  let arcNote = '', arcClass = '';
+  if (l3 >= 1 && l2 >= 1 && l1 >= 1) {
+    arcNote = '✓ Good progression — surface → detail → depth represented'; arcClass = 'arc-good';
+  } else if (l3 === 0 && l2 >= 1) {
+    arcNote = '⚠ Reached detail but never pushed to depth (Level 3)'; arcClass = 'arc-warn';
+  } else if (l3 === 0 && l2 === 0) {
+    arcNote = '✗ Questions stayed at the surface — no progression to detail or depth'; arcClass = 'arc-bad';
+  } else if (l1 === 0) {
+    arcNote = '⚠ Skipped surface level — consider opening more gently'; arcClass = 'arc-warn';
+  } else {
+    arcNote = 'Mixed progression'; arcClass = 'arc-warn';
+  }
+  document.getElementById('levelDisplay').innerHTML = `
+    <div class="level-track">
+      <div class="level-bar-row">
+        <div class="level-label-col"><span class="level-label">L1</span><span class="level-sublabel">Open the Door</span></div>
+        <div class="level-bar-bg"><div class="level-bar-l1" style="width:${Math.round(l1/maxL*100)}%"></div></div>
+        <span class="level-count">${l1}</span>
+      </div>
+      <div class="level-bar-row">
+        <div class="level-label-col"><span class="level-label">L2</span><span class="level-sublabel">Gather Details</span></div>
+        <div class="level-bar-bg"><div class="level-bar-l2" style="width:${Math.round(l2/maxL*100)}%"></div></div>
+        <span class="level-count">${l2}</span>
+      </div>
+      <div class="level-bar-row">
+        <div class="level-label-col"><span class="level-label">L3</span><span class="level-sublabel">Unlock Meaning</span></div>
+        <div class="level-bar-bg"><div class="level-bar-l3" style="width:${Math.round(l3/maxL*100)}%"></div></div>
+        <span class="level-count">${l3}</span>
+      </div>
+    </div>
+    <div class="arc-note ${arcClass}">${arcNote}</div>
+  `;
+
+  // SCORES
+  const scoreItems = [
+    { label:'Listening Moves',  score: scores.listeningScore,
+      tip: 'How many distinct move types you used — paraphrasis, follow-ups, reflection, on-ramps, etc. More variety = higher score. Maxes at 5 when you hit 6+ different move types.' },
+    { label:'Question Quality', score: scores.qScore,
+      tip: 'Weighted by question level. L2 questions count once, L3 questions count 1.5×. A high score means you pushed past the surface and asked questions that demanded reflection.' },
+    { label:'Arc / Structure',  score: scores.arcScore,
+      tip: 'Did your question levels build over the conversation? Compares the avg level in the first third vs. the last third. A good arc moves L1 → L2 → L3, not the other way around.' },
+    { label:'Talk Balance',     score: scores.balanceScore,
+      tip: 'What share of the words the respondent spoke vs. you. Ideal range: respondent speaks 55–80% of the time. If you\'re doing most of the talking, this score drops.' },
+    { label:'Filler Control',   score: scores.fillerScore,
+      tip: 'Your filler word rate as a % of total words spoken (um, uh, like, you know, etc.). Under 3% = 5/5. Every 3% above that drops the score a point.' },
+  ];
+  const scoreHtml = scoreItems.map(s => `
+    <div class="score-bar-wrap">
+      <div class="score-row">
+        <span class="score-left">
+          ${s.label}
+          <span class="score-info">?<span class="score-tooltip">${s.tip}</span></span>
+        </span>
+        <span>${s.score}/5</span>
+      </div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${s.score/5*100}%"></div></div>
+    </div>
+  `).join('');
+  const overall = scores.overall;
+  const overallPct = Math.round(overall/5*100);
+  document.getElementById('scoreDisplay').innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+      <div class="score-big">${overallPct}<span style="font-size:18pt;color:#aaa;">%</span></div>
+      <div class="score-label">Overall · ${overall}/5</div>
+    </div>
+    ${scoreHtml}
+  `;
+
+  // VOICE ANALYSIS
+  function renderVoiceCol(v, name, isInt) {
+    if (!v) return `<div class="${isInt ? 'voice-col-int' : 'voice-col-resp'}" style="color:#aaa;font-size:9pt;font-style:italic;">Not enough text to analyze.</div>`;
+    const idiomLine = v.foundIdioms.length > 0
+      ? `<em>"${v.foundIdioms.slice(0,3).join('", "')}"</em>`
+      : 'None detected';
+    return `
+      <div class="${isInt ? 'voice-col-int' : 'voice-col-resp'}">
+        <div class="voice-item">
+          <div class="vk">Diction Level</div>
+          <div class="vv">${v.dictionNote} <span style="color:#bbb;font-size:8pt;">(${v.dictionLevel}%)</span></div>
+        </div>
+        <div class="voice-item">
+          <div class="vk">Sentence Length</div>
+          <div class="vv">~${v.avgSentLen} words · ${v.varietyNote}</div>
+        </div>
+        <div class="voice-item">
+          <div class="vk">Idioms &amp; Colloquialisms</div>
+          <div class="vv">${idiomLine}</div>
+        </div>
+        <div class="voice-item">
+          <div class="vk">Tone</div>
+          <div class="vv">${v.toneNote}</div>
+        </div>
+        ${isInt ? `<div class="voice-item"><div class="vk">Question Rate</div><div class="vv">${v.questionRatio}% of turns asked a question</div></div>` : ''}
+      </div>
+    `;
+  }
+  const iName = interviewer.charAt(0) + interviewer.slice(1).toLowerCase();
+  const rName = respondent.charAt(0) + respondent.slice(1).toLowerCase();
+  document.getElementById('voiceDisplay').innerHTML = `
+    <div class="voice-grid-wrap">
+      <div class="voice-header-row">
+        <div class="voice-header-cell int">${iName} — Interviewer</div>
+        <div class="voice-header-cell resp">${rName} — Respondent</div>
+      </div>
+      <div class="voice-body-row">
+        ${renderVoiceCol(iVoice, interviewer, true)}
+        ${renderVoiceCol(rVoice, respondent, false)}
+      </div>
+    </div>
+  `;
+
+  // MISSED OPPORTUNITIES
+  if (missedOpps.length === 0) {
+    document.getElementById('missedDisplay').innerHTML = `<p class="no-issues">No major missed opportunities flagged — nice work.</p>`;
+  } else {
+    document.getElementById('missedDisplay').innerHTML = `
+      <div class="flag-list">
+        ${missedOpps.map(m => `<div class="flag-item flag-missed"><div class="flag-label">Missed Opportunity</div>${m.text}</div>`).join('')}
+      </div>
+    `;
+  }
+
+  // DRIFT
+  const drifts = turnDrifts.map((d,i) => d ? { drift: d, speaker: turns[i].speaker } : null).filter(Boolean);
+  if (drifts.length === 0) {
+    document.getElementById('driftDisplay').innerHTML = `<p class="no-issues">No significant drift detected.</p>`;
+  } else {
+    document.getElementById('driftDisplay').innerHTML = `
+      <div class="flag-list">
+        ${drifts.map(d => `<div class="flag-item flag-drift"><div class="flag-label">Tangential Drift</div>${d.drift}</div>`).join('')}
+      </div>
+    `;
+  }
+
+  // LEGEND (three-column grid matching exemplar)
+  document.getElementById('legendGrid').innerHTML = `
+    <div class="legend-col">
+      <h3>Verbal Moves</h3>
+      ${['paraphrase','followup','personal','emotional','encourager','summarizing','memory'].map(k => {
+        const d = MOVE_DEFS.find(m=>m.key===k);
+        return `<div class="legend-item"><div class="legend-swatch hl-${k}" style="background:${d.color};border-bottom:2px solid"></div><div class="legend-text"><strong>${d.label}</strong></div></div>`;
+      }).join('')}
+    </div>
+    <div class="legend-col">
+      <h3>Structural Moves</h3>
+      ${['onramp','circling','bridge','pivot'].map(k => {
+        const d = MOVE_DEFS.find(m=>m.key===k);
+        return `<div class="legend-item"><div class="legend-swatch hl-${k}" style="background:${d.color};border-bottom:2px solid"></div><div class="legend-text"><strong>${d.label}</strong></div></div>`;
+      }).join('')}
+    </div>
+    <div class="legend-col">
+      <h3>Question Level</h3>
+      <div class="legend-item"><div class="legend-swatch hl-l1"></div><div class="legend-text"><strong>L1 — Open the Door</strong><span>Safe, general, tone-setting</span></div></div>
+      <div class="legend-item"><div class="legend-swatch hl-l2"></div><div class="legend-text"><strong>L2 — Gather Details</strong><span>Specifics, sequence, recall</span></div></div>
+      <div class="legend-item"><div class="legend-swatch hl-l3"></div><div class="legend-text"><strong>L3 — Unlock the Meaning</strong><span>Reflection, significance, "why it matters"</span></div></div>
+      <h3 style="margin-top:12px;">Other</h3>
+      <div class="legend-item"><div class="legend-swatch" style="border-bottom:2.5px dotted #b02020;background:transparent;"></div><div class="legend-text"><strong>Filler Word</strong><span>um, uh, like, you know…</span></div></div>
+      <div class="legend-item"><div class="legend-swatch hl-drift"></div><div class="legend-text"><strong>Tangential Drift</strong><span>Response strays from the question</span></div></div>
+    </div>
+  `;
+
+  // ANNOTATED TRANSCRIPT
+  let transcriptHtml = '';
+  for (let i = 0; i < turns.length; i++) {
+    const turn = turns[i];
+    const isInt = turn.speaker === interviewer;
+    const isRes = turn.speaker === respondent;
+    const isNar = turn.speaker === 'NARRATOR';
+
+    let labelClass = isInt ? '' : isRes ? 'respondent' : 'narrator';
+    let text = turn.text;
+
+    if (isInt) {
+      text = highlightFillers(text);
+      text = highlightMoves(text, turnMoves[i]);
+      const lv = turnLevels[i];
+      if (lv > 0) text = highlightQuestionLevel(text, lv);
+    }
+    if (isRes) {
+      text = highlightFillers(text);
+      if (turnDrifts[i]) {
+        text += ` <span class="highlight hl-drift"><span class="tag tag-drift">⚠ Drift</span></span>`;
+      }
+    }
+
+    const displayName = isNar
+      ? `<span style="color:#bbb;font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0;">[note]</span>`
+      : `<span class="turn-label ${labelClass}">${turn.speaker.charAt(0) + turn.speaker.slice(1).toLowerCase()}</span>`;
+
+    transcriptHtml += `
+      <div class="turn">
+        <div class="turn-label ${labelClass}">${isNar ? '[note]' : turn.speaker.charAt(0) + turn.speaker.slice(1).toLowerCase()}</div>
+        <div class="turn-text">${text}</div>
+      </div>
+    `;
+  }
+  document.getElementById('annotatedTranscript').innerHTML = transcriptHtml;
+
+  // COMMENTARY
+  function buildCommentary(voice, name, isInt, moveTotals, scores, questionLevels, missedOpps, drifts) {
+    const displayName = name.charAt(0) + name.slice(1).toLowerCase();
+    const strengths = [], growth = [], flags = [];
+
+    if (isInt) {
+      if (moveTotals.followup >= 3) strengths.push('Strong follow-up question pattern — you stayed in the conversation.');
+      if (moveTotals.encourager >= 2 && moveTotals.followup >= 2) strengths.push('Good mix of minimal encouragers and substantive questions.');
+      if (scores.balanceScore >= 4) strengths.push('Talk-time balance was healthy — you gave the respondent room.');
+      if (questionLevels.some(l=>l===3)) strengths.push('Reached Level 3 depth — the interview earned its most meaningful moments.');
+      if (moveTotals.personal >= 1) strengths.push('Personal connection move built rapport effectively.');
+
+      if (scores.balanceScore <= 2) growth.push('Watch your air time — you were taking up too much of the conversation.');
+      if (!questionLevels.some(l=>l===3)) growth.push('Never reached Level 3 questions — push toward meaning and reflection.');
+      if (moveTotals.followup <= 1) growth.push('More follow-up questions needed — build on what your respondent actually said.');
+      if (scores.fillerScore <= 2) growth.push('Filler words are undercutting your presence — slow down before asking.');
+      if (missedOpps.length >= 2) growth.push('Multiple missed opportunities to go deeper — notice when your respondent gives you something rich.');
+
+      if (voice && voice.foundIdioms.length >= 3) strengths.push(`Voice has personality — idiomatic ("${voice.foundIdioms[0]}", "${voice.foundIdioms[1]}").`);
+      if (voice && voice.figCount === 0) flags.push('Limited figurative language — try one vivid comparison in your questions.');
+    } else {
+      if (voice && voice.dictionLevel > 18) strengths.push('Elevated diction — responses have range and sophistication.');
+      if (voice && voice.avgSentLen > 15) strengths.push('Developed, well-elaborated answers — you gave the interviewer material to work with.');
+      if (drifts.length === 0) strengths.push('Responses stayed focused on the questions asked.');
+      if (voice && voice.toneNote.includes('Wry')) strengths.push('Distinctive voice — dry wit and irony are present.');
+
+      if (drifts.length >= 2) growth.push('Answers drifted in multiple turns — practice ending your response where the question asked you to end.');
+      if (voice && voice.avgSentLen > 30) growth.push('Some answers ran very long — try landing your key point, then pausing.');
+      if (rFillers.total > 10) growth.push('Filler words suggest processing out loud — it\'s natural, but practice pausing silently instead.');
+    }
+
+    return `
+        <h4>${displayName} — ${isInt ? 'Interviewer' : 'Respondent'}</h4>
+        ${strengths.map(s => `<div class="comment-item strength">✓ ${s}</div>`).join('')}
+        ${growth.map(g => `<div class="comment-item growth">→ ${g}</div>`).join('')}
+        ${flags.map(f => `<div class="comment-item flag">⚠ ${f}</div>`).join('')}
+        ${strengths.length + growth.length + flags.length === 0 ? '<div class="comment-item" style="color:#999;font-style:italic">Not enough data for commentary.</div>' : ''}
+    `;
+  }
+
+  document.getElementById('interviewerCommentary').innerHTML = buildCommentary(iVoice, interviewer, true, moveTotals, scores, questionLevels, missedOpps, []);
+  document.getElementById('respondentCommentary').innerHTML = buildCommentary(rVoice, respondent, false, moveTotals, scores, questionLevels, [], drifts);
+}
+
+// ─────────────────────────────────────────────
+// LOAD EXAMPLE
+// ─────────────────────────────────────────────
+
+function loadExample() {
+  document.getElementById('interviewerName').value = 'KAITLIN';
+  document.getElementById('respondentName').value  = 'FINN';
+  document.getElementById('transcriptInput').value = `KAITLIN: Um, we can start just introducing yourself. Like, what do you do at Pinole Valley, both in and outside of the classroom? Like what does your life look like?
+FINN: So, inside the classroom, I teach five sections of English --- or at least try to... Sorry, did you want me to talk pedagogical strategy, focus more on curriculum, routines, pragmatics?
+KAITLIN: It's up to you.
+FINN: Um, I think it's helpful, especially in the first years, to take an experimental mindset to everything you're attempting - systems, structures, routines, curriculum, everything, throw the spaghetti at the wall, better to try and fail than fear the attempt. Get comfortable with sucking at stuff. The center won't hold, things fall apart, lessons flop, you pick yourself up and dust yourself off. From there, develop the capacity to do some naval gazing, reflect on what didn't go well, and have a system in place --- probably the most important part --- to make it better the next go round. Sorry, I'm spiraling off here. You wanted me to talk about what I do outside the classroom?
+KAITLIN: Yeah. Like your role as a teacher --- what else do you do at the school, things like that?
+FINN: Oh, my role within the institution itself. Yeah, so I'm involved as a co-chair of the English department with Mr. McKleroy. There are currently around seven teachers and two student teachers. And I actually just met with Mac for the collaborative PD this morning --- which we do once a month --- We talked about standardizing the layout of information in Unit Guides for an easy peak into what it does, which could be just unambiguously helpful for somebody stepping into the role of an English teacher.
+KAITLIN: Seven? Do we have that many?
+FINN: I think so. I think it's around seven. And that's all to support new teachers that are coming in that would like curriculum --- by no means do you have to do it the way it's prescribed, but just so that it's useful.
+KAITLIN: Mm-hmm. That's true. Yeah.
+KAITLIN: How has being a co-chair in your first year at this site felt?
+FINN: When I came into this place, I just wanted to be helpful. I wanted to understand the levers and mechanisms of decision making, because I hadn't been in any kind of campus leadership role before. I've peeked behind the curtain at both the department level and the inter-department level --- which is actually even more harrowing. How has it been? I played it too safe at the front end, especially with ILT. I kind of sat in the back seat, even though I'm signaling: "I want to be a leader" --- but I don't want to tell you what to do. And then that waned around the end of the first semester. I was like, Oh, they actually kind of want me to tell them what to do. I need to be more managerial. Just build something. And let it rip. It's okay if you bump heads. It's better that you're in the arena getting dusty than sitting on the sidelines for fear of ruffling feathers.
+KAITLIN: Yeah. That makes sense. Took you a semester to learn that.
+KAITLIN: Um --- that actually relates to one of my last questions. One thing that I was wrestling with for the newsletter was I didn't want to be the student teacher saying, "this is the thing I really want you to use, use it now" --- especially when it came to sending reminder emails or bringing it up in department meetings. So my question would be --- as I move into my first year teaching --- what are some attributes you think I should carry forward versus step back from?
+FINN: Um, yeah --- it sounds like you and I struggle with the same doubt. Or it's more like conscientiousness, if you want to give it a nicer frame. We're both acutely aware of how busy other people are, and that by putting another thing on their plate, it's just overwhelming them more. But you're also driven by this desire to share something that actually serves a function. Just let it rip. Your creations are not an intrusion. If they don't want to participate, they have the option to just ignore your email. Right?
+KAITLIN: Shoot. You were saying?
+FINN: But your system --- I know that you're worried --- because if only a couple of teachers participate, it flies in the face of the whole purpose of the newsletter in the first place. So are you asking me: how do you nudge these people so that everyone participates in as frictionless a way as possible?
+KAITLIN: Or --- I think --- your perspective on a new teacher coming in and saying, "Here's this tool." How did that land for you?
+FINN: Love it. We need more of it. It's evidence of care, expanding your circle of concern beyond what's immediately in front of you. There's this whole continuum, right? On one end, you toe the line, they hand you curriculum and say "teach this to the letter and don't deviate." That's one model. I've tried it, and let me tell you it's awful. The other end is where we are: "You teach this class, they teach that class. Good luck everybody."
+KAITLIN: What are your thoughts on the newsletter? How has it landed for you?
+FINN: I think it's fantastic. Easily scalable to other departments --- what you created takes three to five minutes to fill in. It's an easy lift. Your biggest issue with it is buy-in. The more teachers feeding the form, the better it clarifies the differences classroom to classroom.
+KAITLIN: When a newsletter comes out and hits your inbox --- do you read the whole thing? Do you skim it?
+FINN: I read the whole thing, because I think it's designed to be digestible in like 90 seconds to 2 minutes. And it's supremely helpful --- because I'm like, "Oh, this person needs help with this." I think it's a great tool, and I love the automaticity of it.
+KAITLIN: Has the newsletter sparked any conversations with other department members about what they're doing --- informally or formally?
+FINN: Yeah, but I kind of already do that with Mac. I need to be more in touch with Brady and Barrett. But I don't want to stray too far from the newsletter. Let's keep going.
+KAITLIN: Sure, sure.
+KAITLIN: Has it shifted anything for you --- teaching-wise, or collaboratively --- how you view the department?
+FINN: Yeah, so if anything, it's shone a spotlight on how siloed things are, classroom by classroom. And the lack of awareness and transparency between one classroom and the next. If we truly do value horizontal alignment, we should preserve the tool. I wish we had a weekly collaboration container the way Berkeley High does. Once a month is just wildly ineffective.
+KAITLIN: How does that make you feel going into next year --- and what you might want to change?
+FINN: I have a lot of ideas for reformation, both for ILT and at the departmental level. I don't think anybody can deny that we can be more effective as a group. We need to figure out why we don't turn talk into action. Talk is cheap. Everybody's great at armchair analysis --- "this is what needs to be done." But it's the implementation that matters.
+KAITLIN: That's what I was trying to do with the discussion tracker document I shared in the most recent newsletter --- where I just said: "This is how I created this. This is how it works. Now use it if you want it."
+FINN: I love that. I saved a copy of it. The more you do that, the more other teachers --- whether or not they say anything to you --- respect you as a professional, because you're trying to help the community. You're not just keeping your head down with your shoulder to the wheel in your own classroom.
+KAITLIN: Yeah.
+KAITLIN: And just one thing. Um --- is there anything I haven't asked that you think matters in regards to newsletter collaboration --- and the other thread of being a new teacher entering a department somewhere else?
+FINN: Here's a pitfall for you, certain creative types fall in love with their own perfectionism. Don't fall in that trap. Share an imperfect model. It's better to trade perfect for done. Eventually the bell rings and you have to show something. Don't worry about it being in perfect order. Just get it in as presentable condition as you can and launch it. Take that spirit you brought to the newsletter --- genuinely trying to be helpful and build something useful here for other people --- and keep trying to help, even if you're ignored. Because I built something and didn't share it ---
+KAITLIN: What was it and why didn't you share it?
+FINN: My PowerSchool comment bank tutorial. I found it personally useful for progress reports. Why didn't I share it? I woke up at 5 in the morning to build it, meeting got canceled, and I was a little sour grape about it. But there's nothing stopping me from just pushing it out.
+KAITLIN: Makes sense to me. Well, those are all the questions that I have. Thank you so much for taking the time.
+FINN: Yeah --- now I'm going to see if this conversation got the full transcript and try to drag it over into a doc. Thanks for giving me this data.`;
+}
+</script>
+</body>
+</html>
