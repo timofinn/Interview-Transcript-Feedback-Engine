@@ -243,6 +243,59 @@
   }
   .score-info:hover .score-tooltip { display: block; }
 
+  /* ─── Card header tooltip (Missed Opps / Drift) ─── */
+  .card-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #ddd9cc;
+    color: #888;
+    font-size: 7.5pt;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    cursor: default;
+    position: relative;
+    vertical-align: middle;
+    margin-left: 5px;
+    line-height: 1;
+  }
+  .card-info:hover { background: #b07a00; color: #fff; }
+  .card-info .card-tooltip {
+    display: none;
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #2a2a1e;
+    color: #f0ece2;
+    font-size: 8pt;
+    font-family: Arial, sans-serif;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.55;
+    padding: 9px 12px;
+    border-radius: 5px;
+    width: 220px;
+    z-index: 100;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  .card-info .card-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: #2a2a1e;
+    border-left: 0;
+  }
+  .card-info:hover .card-tooltip { display: block; }
+
   /* ─── Pie chart ─── */
   .pie-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
   canvas#pieChart { flex-shrink: 0; }
@@ -674,15 +727,13 @@ Finn: Really well, actually. I think..."></textarea>
     </div>
 
     <!-- Row 4: Missed opportunities / Drift -->
-    <div class="dash-row" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:28px;">
+    <div class="dash-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;">
       <div class="card">
-        <h3>Missed Opportunities <span style="font-weight:normal;color:#999;font-size:8pt;">(Interviewer)</span></h3>
-        <p class="card-subtext">Moments where the interviewer had an opening and didn't take it — a rich answer that got no follow-up, two encouragers in a row instead of a question, or a chance to push from Level 2 detail into Level 3 meaning.</p>
+        <h3>Missed Opportunities <span style="font-weight:normal;color:#999;font-size:8pt;">(Interviewer)</span><span class="card-info">?<span class="card-tooltip">Moments where the interviewer had an opening and didn't take it — a rich answer that got no follow-up, two encouragers in a row instead of a question, or a chance to push from Level 2 detail into Level 3 meaning.</span></span></h3>
         <div id="missedDisplay"></div>
       </div>
       <div class="card">
-        <h3>Tangential Drift <span style="font-weight:normal;color:#999;font-size:8pt;">(Respondent)</span></h3>
-        <p class="card-subtext">How far the respondent strayed from what was actually asked — flagged when an answer wanders into new territory and ends somewhere different from where the question pointed.</p>
+        <h3>Tangential Drift <span style="font-weight:normal;color:#999;font-size:8pt;">(Respondent)</span><span class="card-info">?<span class="card-tooltip">How far the respondent strayed from what was actually asked — flagged when an answer wanders into new territory and ends somewhere different from where the question pointed.</span></span></h3>
         <div id="driftDisplay"></div>
       </div>
     </div>
