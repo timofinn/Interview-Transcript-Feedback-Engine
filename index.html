@@ -501,7 +501,7 @@
   .turn-label.narrator { color: #aaa; font-weight: normal; font-style: italic; text-transform: none; letter-spacing: 0; font-size: 8pt; }
   .turn-text { font-size: 10.5pt; line-height: 1.75; }
 
-  /* ─── Highlight styles (matching exemplar) ─── */
+  /* ─── Highlight styles ─── */
   .highlight { padding: 0 2px; border-radius: 2px; }
 
   .hl-paraphrase  { background: #fff3b0; border-bottom: 2px solid #d4a800; }
@@ -513,13 +513,15 @@
   .hl-onramp      { background: #dff5e1; border-bottom: 2px solid #2a7a40; }
   .hl-circling    { background: #fff0d4; border-bottom: 2px solid #b07a00; }
   .hl-memory      { background: #ffe4f0; border-bottom: 2px solid #a0306a; }
-  .hl-filler      { border-bottom: 2.5px dotted #b02020; }
+  .hl-filler      { background: #f9f200; border-radius: 2px; padding: 0 1px; }
   .hl-drift       { background: #fde8d8; border-bottom: 2px dashed #c0622a; }
   .hl-l1          { background: #d0ecf7; border-bottom: 2px solid #2176ae; }
   .hl-l2          { background: #dff5e1; border-bottom: 2px solid #2a7a40; }
   .hl-l3          { background: #e8d5f5; border-bottom: 2px solid #7b3fa0; }
+  .hl-bridge      { background: #d1fae5; border-bottom: 2px solid #34d399; }
+  .hl-pivot       { background: #fef3c7; border-bottom: 2px solid #f59e0b; }
 
-  /* ─── Annotation tags (matching exemplar) ─── */
+  /* ─── Annotation tags ─── */
   .tag {
     display: inline-block;
     font-family: Arial, sans-serif;
@@ -550,10 +552,6 @@
   .tag-l1          { background: #d0ecf7; color: #0d4a72; border: 1px solid #2176ae; }
   .tag-l2          { background: #dff5e1; color: #1e5c30; border: 1px solid #2a7a40; }
   .tag-l3          { background: #e8d5f5; color: #4a1a70; border: 1px solid #7b3fa0; }
-
-  /* highlight styles for new moves */
-  .hl-bridge  { background: #d1fae5; border-bottom: 2px solid #34d399; }
-  .hl-pivot   { background: #fef3c7; border-bottom: 2px solid #f59e0b; }
 
   /* ─── Commentary ─── */
   .commentary-section { margin-bottom: 36px; }
@@ -646,6 +644,53 @@
     color: #aaa;
     line-height: 1.5;
   }
+
+  /* ─── Save as PDF bar ─── */
+  .pdf-bar {
+    display: none;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #2a2a1e;
+    padding: 12px 24px;
+    text-align: center;
+    z-index: 999;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.18);
+  }
+  .pdf-bar .pdf-hint {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #aaa;
+    margin-left: 14px;
+    letter-spacing: 0.02em;
+  }
+  .btn-pdf {
+    background: #f0ece2;
+    color: #2a2a1e;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-pdf:hover { background: #fff; }
+
+  /* ─── Print styles ─── */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; padding: 24px 40px; }
+    .input-section { display: none !important; }
+    .pdf-bar { display: none !important; }
+    #results { display: block !important; }
+    .score-info .score-tooltip,
+    .card-info .card-tooltip { display: none !important; }
+    canvas { max-width: 130px; }
+  }
 </style>
 </head>
 <body>
@@ -691,7 +736,6 @@ Finn: Really well, actually. I think..."></textarea>
         <div class="commentary-block" id="interviewerCommentary"></div>
         <div class="commentary-block resp" id="respondentCommentary"></div>
       </div>
-      <!-- MOVE COUNT embedded inside commentary section -->
       <div class="move-summary-bar" style="margin-top:20px;margin-bottom:0;">
         <h2>Move Count — At a Glance</h2>
         <div class="move-summary-grid" id="moveSummaryGrid"></div>
@@ -724,7 +768,7 @@ Finn: Really well, actually. I think..."></textarea>
         </div>
       </div>
       <div class="card">
-        <h3>Filler Words</h3>
+        <h3>Verbal Filler</h3>
         <div id="fillerDisplay"></div>
       </div>
       <div class="card">
@@ -733,10 +777,10 @@ Finn: Really well, actually. I think..."></textarea>
       </div>
     </div>
 
-    <!-- Row 1b: Missed opportunities / Drift (between Listening Moves and Question Level) -->
+    <!-- Row 1b: Missed opportunities / Drift -->
     <div class="dash-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
       <div class="card">
-        <h3>Missed Opportunities <span style="font-weight:normal;color:#999;font-size:8pt;">(Interviewer)</span><span class="card-info">?<span class="card-tooltip">Flagged when the interviewer uses two or more encouragers in a row without asking a follow-up question — a pattern that can signal passive listening rather than active engagement. Intentional silence and single minimal encouragers are not flagged.</span></span></h3>
+        <h3>Missed Opportunities <span style="font-weight:normal;color:#999;font-size:8pt;">(Interviewer)</span><span class="card-info">?<span class="card-tooltip">Two patterns flagged: (1) Two or more encouragers in a row without a question — passive listening. (2) Acknowledging something rich ("Wow," "That's incredible") but then asking a surface-level L1 question instead of drilling deeper. Both patterns signal a missed chance to go further.</span></span></h3>
         <div id="missedDisplay"></div>
       </div>
       <div class="card">
@@ -775,6 +819,12 @@ Finn: Really well, actually. I think..."></textarea>
 
 </div><!-- /page -->
 
+<!-- PDF bar -->
+<div class="pdf-bar" id="pdfBar">
+  <button class="btn-pdf" onclick="window.print()">⬇ Save as PDF</button>
+  <span class="pdf-hint">In the print dialog, choose "Save as PDF" as the destination.</span>
+</div>
+
 <script>
 // ─────────────────────────────────────────────
 // DATA
@@ -783,19 +833,120 @@ Finn: Really well, actually. I think..."></textarea>
 const FILLERS = ['um','uh','like','you know what i mean','you know','i mean','sort of','kind of','basically','literally','right','okay','so','well','anyway'];
 
 const MOVE_DEFS = [
-  // ── Verbal Moves ──
-  { key:'paraphrase',  label:'Paraphrasis',           color:'#fde68a', cat:'verbal',     patterns:[/\bif i'?m hearing you\b/i,/\bso what you'?re saying\b/i,/\bso you'?re saying\b/i,/\bin other words\b/i,/\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,/\bsounds like\b/i] },
-  { key:'followup',    label:'Follow-up Question',   color:'#bbf7d0', cat:'verbal',     patterns:[] }, // detected structurally
-  { key:'personal',    label:'Personal Connection',  color:'#fecaca', cat:'verbal',     patterns:[/\bfor me\b/i,/\bi also\b/i,/\bi was\b.*\btoo\b/i,/\bsimilar(ly)?\b/i,/\brelates to\b/i,/\bme too\b/i,/\bi can relate\b/i,/\bi('ve| have) (also|been|done|felt)\b/i,/\bfunnily enough\b/i,/\bsame (thing|issue|experience) (happened|as a)\b/i] },
-  { key:'emotional',   label:'Reflection / Naming',  color:'#e9d5ff', cat:'verbal',     patterns:[/\bhow did that (feel|make you)\b/i,/\bwhat was that like\b/i,/\bthat (sounds|seems) (hard|difficult|tough|exciting|scary|frustrating|isolating|lonely)\b/i,/\bhow does that make you feel\b/i,/\bthat (must have been|sounds like it was)\b/i] },
-  { key:'encourager',  label:'Nudge of Encouragement', color:'#bfdbfe', cat:'verbal',   patterns:[/^(yeah\.?|mm-?hmm\.?|uh-?huh\.?|right\.?|sure\.?|okay\.?|yep\.?|mmm\.?|got it\.?|i see\.?|shoot\.?)$/i,/\b(expand|elaborate|say more about|tell me more) (on |about )?that\b/i,/\bcould you (expand|elaborate)\b/i] },
-  { key:'summarizing', label:'Summarizing / Closing', color:'#fed7aa', cat:'verbal',    patterns:[/\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,/\bthat'?s all (i have|the questions)\b/i,/\bthank you (so much|for your time)\b/i,/\banything i haven'?t asked\b/i,/\bunless you'?d like to say more\b/i] },
-  // ── Structural Moves ──
-  { key:'onramp',      label:'On-Ramp',               color:'#a7f3d0', cat:'structural', patterns:[/\bi wanted to ask (about|you)\b/i,/\bone thing i'?ve been (thinking|wondering)\b/i,/\bthat (actually |kind of )?relates\b/i,/\bbuilding on that\b/i,/\byou (spent|mentioned|talked about|said).*\b(so|and|which).*\?(.*)/i] },
-  { key:'circling',    label:'Circling Back',          color:'#fce7f3', cat:'structural', patterns:[/\byou mentioned (earlier|before|that)\b/i,/\bgoing back to\b/i,/\bearlier you (said|mentioned|talked about)\b/i,/\bwe talked about\b/i,/\bcan we go back to\b/i,/\bi want to come back to\b/i] },
-  { key:'bridge',      label:'Smooth Bridge',          color:'#d1fae5', cat:'structural', patterns:[/\bbut first\b/i,/\bbefore (we|i) (move|get|go) (on|to)\b/i,/\byou mentioned.*--- i want to come back\b/i,/\bspeaking of\b/i,/\bthat actually reminds me\b/i,/\bthat connects to\b/i] },
-  { key:'pivot',       label:'Skilled Pivot',          color:'#fef3c7', cat:'structural', patterns:[/\bi want to shift\b/i,/\blet'?s (move|shift|turn) to\b/i,/\bchanging gears\b/i,/\bon a different note\b/i] },
-  { key:'memory',      label:'Asking for Specific Memory', color:'#ddd6fe', cat:'verbal', patterns:[/\bis there a (moment|time|specific|particular)\b/i,/\bcan you think of a time\b/i,/\bdo you remember (when|a time)\b/i,/\btell me about a (specific|particular|time)\b/i,/\bwhat('s| is) a (specific|particular)\b/i] },
+  { key:'paraphrase',  label:'Paraphrasis',           color:'#fde68a', cat:'verbal',     patterns:[
+    /\bif i'?m hearing you\b/i,/\bso what you'?re saying\b/i,/\bso you'?re saying\b/i,/\bin other words\b/i,
+    /\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,/\bsounds like\b/i,
+    /\bso basically what you'?re saying is\b/i,/\bit sounds like you (were|are|felt|feel)\b/i,
+    /\bso you felt like\b/i,/\bif i'?m (understanding|hearing) (right|you|correctly)\b/i,
+    /\bso it was (less|more) about\b/i,/\byou were (more|less) .{0,30} than\b/i,
+    /\bgood,? your (dad|mom|family|friend) was\b/i,/\bfrom what (i could understand|you told me|you said|i heard)\b/i,
+    /\bby you saying (all of this|that|this)\b/i,
+  ] },
+  { key:'followup',    label:'Follow-up Question',   color:'#bbf7d0', cat:'verbal',     patterns:[
+    /\byou said (it was|that|he|she|they|it|this)\b/i,
+    /\bwhat (was that|made it) (actually |really )?(like|so|hard|stressful|difficult|scary|tough)\b/i,
+    /\bhow did you (deal with|handle|get through|manage) that\b/i,
+    /\bwhy do you think that (affected|changed|hit|got to|stuck with) you\b/i,
+    /\bwhat happened (after|next|then|following)\b/i,/\bwhat was that (actually |really )?like (for you)?\b/i,
+    /\bwhat did you guys have to face\b/i,/\bdid things (keep|get|go) (worse|better|horrible|hard)\b/i,
+    /\bdid (a light|things) (shine|get better|improve|turn around)\b/i,/\bwould you say (your|he|she|they|it)\b/i,
+    /\bdo you have any (other|more|final)? ?messages?\b/i,/\bwhat (would you|do you) (have to say|say) about that\b/i,
+    /\bwhat could you build (upon|on) that\b/i,
+  ] },
+  { key:'personal',    label:'Personal Connection',  color:'#fecaca', cat:'verbal',     patterns:[
+    /\bfor me\b/i,/\bi also\b/i,/\bi was\b.*\btoo\b/i,/\bsimilar(ly)?\b/i,/\brelates to\b/i,/\bme too\b/i,
+    /\bi can relate\b/i,/\bi('ve| have) (also|been|done|felt)\b/i,/\bfunnily enough\b/i,
+    /\bsame (thing|issue|experience) (happened|as a)\b/i,
+    /\bi'?ve (kind of )?(felt|had|experienced|been through) (something |a situation )?(similar|like that)\b/i,
+    /\bthat (actually )?reminds me of something that happened to me\b/i,/\bi (get that|know that feeling)\b/i,
+    /\bi'?ve been in a situation like that\b/i,/\bi feel like i can relate\b/i,
+    /\bi had (almost |nearly )?the opposite experience\b/i,
+    /\bi (honestly )?would have been (freaking out|scared|nervous|lost|overwhelmed)\b/i,
+    /\bi personally connect (that|with that|to that)\b/i,/\bif i were in your shoes\b/i,
+  ] },
+  { key:'emotional',   label:'Reflection / Naming',  color:'#e9d5ff', cat:'verbal',     patterns:[
+    /\bhow did that (feel|make you)\b/i,/\bwhat was that like\b/i,
+    /\bthat (sounds|seems) (hard|difficult|tough|exciting|scary|frustrating|isolating|lonely)\b/i,
+    /\bhow does that make you feel\b/i,/\bthat (must have been|sounds like it was)\b/i,
+    /\bthat sounds like it was (really |pretty |kind of )?(overwhelming|hard|difficult|a lot|tough|scary|frustrating|a big deal)\b/i,
+    /\bit seems like that was (kind of |really |pretty )?a turning point\b/i,
+    /\bthat must have been (pretty |really |kind of )?(frustrating|hard|scary|overwhelming|a lot)\b/i,
+    /\bit sounds like you were (actually |really |kind of )?proud\b/i,
+    /\bthat (feels?|sounds?) like (it was |that was )?a big moment\b/i,
+    /\bit (seems|sounds|feels) like (that|it) (was|must have been)\b/i,
+    /\bthat (actually |honestly |kind of )?(damn near |basically )?sounds like a (whole |entire )?movie\b/i,
+    /\bthat does sound like\b/i,
+    /\bi (do think|think) it must have been (very |really |pretty )?(scary|hard|tough|uneasy|difficult)\b/i,
+    /\bi honestly didn'?t know (like |that )?(so much|how much|what)\b/i,
+  ] },
+  { key:'encourager',  label:'Nudge of Encouragement', color:'#bfdbfe', cat:'verbal',   patterns:[
+    /^(yeah\.?|mm-?hmm\.?|uh-?huh\.?|right\.?|sure\.?|okay\.?|yep\.?|mmm\.?|got it\.?|i see\.?|shoot\.?)[.!?…]*$/i,
+    /^(yeah|right|mm-?hmm|okay|uh-?huh)[\s,]+(yeah|right|mm-?hmm|okay|uh-?huh)[.!?…]*$/i,
+    /\b(yeah|okay|right|mm-?hmm|uh-?huh|i see)[,.]?\s+(keep going|go on|say more|tell me more|what else|and then|what happened next)\b/i,
+    /\b(expand|elaborate|say more about|tell me more) (on |about )?that\b/i,/\bcould you (expand|elaborate)\b/i,
+  ] },
+  { key:'summarizing', label:'Summarizing / Closing', color:'#fed7aa', cat:'verbal',    patterns:[
+    /\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,
+    /\bthat'?s all (i have|the questions)\b/i,/\bthank you (so much|for your time)\b/i,
+    /\banything i haven'?t asked\b/i,/\bunless you'?d like to say more\b/i,
+    /\bso overall it sounds like (that |this )?(experience|moment|story)\b/i,
+    /\bit seems like the main thing you took away\b/i,/\bthose are all the questions i had\b/i,
+    /\bso just to (kind of |basically )?wrap up\b/i,/\bi think that (covers|wraps up) everything\b/i,
+    /\bis there anything (else )?(you want|you'd like) to add\b/i,
+    /\bi'?ve gotten what i wanted\b/i,/\bthat'?ll be my interview\b/i,
+    /\band before i (do go|go|wrap up|leave)\b/i,/\bfrom what you told me,? i could tell\b/i,
+    /\bi'?m (sure|glad) (that was|my teacher)\b/i,
+  ] },
+  { key:'onramp',      label:'On-Ramp',               color:'#a7f3d0', cat:'structural', patterns:[
+    /\bi wanted to ask (about|you)\b/i,/\bone thing i'?ve been (thinking|wondering)\b/i,
+    /\bthat (actually |kind of )?relates\b/i,/\bbuilding on that\b/i,
+    /\byou (spent|mentioned|talked about|said).*\b(so|and|which).*\?(.*)/i,
+    /\bso (with that|from what you|based on what|given what)\b/i,/\bknowing (that|what you|how)\b.*\?/i,
+    /\b(given|considering|with) (all (of )?that|everything you)\b/i,
+    /\bbased on what you (were saying|said|told me|shared)\b/i,
+    /\bmy (first |next |last )?(question is|question was|question would be).{0,30}(about|with|what|how|when|why)\b/i,
+    /\bgoing into this.{0,40}(wondering|curious|wanted to ask)\b/i,/\bi (wanted|want) to start with\b/i,
+    /\bthe thing i'?m (kind of |a bit )?(curious|wondering) about\b/i,
+    /\bi (guess|kind of) (want(ed)? to ask|was curious)\b/i,
+    /\bwe'?ll be talking today about\b/i,/\bif we were to think back\b/i,
+    /\bi (had|have) (a |had a )?guiding question\b/i,/\bthis was one of my (final|last|main|guiding) questions?\b/i,
+    /\bthe (whole |entire |main )?purpose of (this |the )?interview\b/i,/\bbefore i (do go|wrap up|finish|end)\b/i,
+  ] },
+  { key:'circling',    label:'Circling Back',          color:'#fce7f3', cat:'structural', patterns:[
+    /\byou mentioned (earlier|before|that)\b/i,/\bgoing back to\b/i,
+    /\bearlier you (said|mentioned|talked about)\b/i,/\bwe talked about\b/i,
+    /\bcan we go back to\b/i,/\bi want to (come back|go back) to\b/i,
+    /\bearlier you said (something about|that)\b/i,/\bwait,? going back to\b/i,
+    /\bthat connects to when you (were talking|talked|mentioned|said)\b/i,
+    /\byou mentioned before that\b/i,/\bi want to go back to the part (where|when|about)\b/i,
+    /\bgoing back to what you said\b/i,/\bi'?m (gonna|going to) circle back\b/i,
+    /\bi'?ll circle back\b/i,/\bcircle back to (my|the|that|what)\b/i,
+  ] },
+  { key:'bridge',      label:'Smooth Bridge',          color:'#d1fae5', cat:'structural', patterns:[
+    /\bbut first\b/i,/\bbefore (we|i) (move|get|go) (on|to)\b/i,
+    /\byou mentioned.*--- i want to come back\b/i,/\bspeaking of\b/i,
+    /\bthat actually reminds me\b/i,/\bthat connects to\b/i,
+    /\bthat actually makes me think of (another|a)\b/i,/\bspeaking of your\b/i,
+    /\bthat kind of reminds me of (something|another)\b/i,/\bsince you brought that up\b/i,
+    /\bthat leads (into|to) my next question\b/i,/\bthat (makes me think|got me thinking|reminded me)\b/i,
+  ] },
+  { key:'pivot',       label:'Skilled Pivot',          color:'#fef3c7', cat:'structural', patterns:[
+    /\bi want to shift\b/i,/\blet'?s (move|shift|turn) to\b/i,/\bchanging gears\b/i,/\bon a different note\b/i,
+    /\bthis is (kind of |sort of )?a different (question|topic)\b/i,/\bi'?m (gonna|going to) switch topics\b/i,
+    /\bmoving away from that\b/i,/\bthis is (sort of |kind of )?unrelated,? but\b/i,
+    /\b(okay,? )?changing directions\b/i,/\bon a completely different\b/i,
+    /\blet me (change|switch|shift) (topics?|gears|directions?)\b/i,
+  ] },
+  { key:'memory',      label:'Asking for Specific Memory', color:'#ddd6fe', cat:'verbal', patterns:[
+    /\bis there a (moment|time|specific|particular)\b/i,/\bcan you think of a time\b/i,
+    /\bdo you remember (when|a time|exactly when|the (moment|day|time))\b/i,
+    /\btell me about a (specific|particular|time)\b/i,/\bwhat('s| is) a (specific|particular)\b/i,
+    /\bcan you think of a specific time (when|where|that)\b/i,
+    /\bwhat'?s (one moment|a moment) that (really )?stands out\b/i,
+    /\bwas there a (particular|specific) (day|moment|time|situation)\b/i,
+    /\bcan you walk me through one example\b/i,/\bone (moment|example|time|situation) (that|where|when)\b/i,
+    /\bdo you remember (exactly |clearly )?(when|the (moment|day|time))\b/i,
+  ] },
 ];
 
 // ─────────────────────────────────────────────
@@ -804,16 +955,12 @@ const MOVE_DEFS = [
 
 function classifyQuestionLevel(q) {
   const t = q.toLowerCase();
-  // L3: meaning, reflection, significance, why it matters
   const l3patterns = [/what did (that|this|it) (mean|teach|show|reveal)/,/why did (that|it|this) (stick|matter|affect)/,/how (has|have|did) (that|this|it) (changed|shaped|affected|influenced)/,/what would you (do differently|have done)/,/what do you wish/,/looking back/,/in retrospect/,/what does (that|this) say about/,/what are your thoughts going into/,/how does that make you feel (going|about|in)/,/what matters (most|to you)/,/what (have you|did you) (learned|taken away|realized)/,/why (didn'?t|did) you/,/what would you (carry|keep|change)/,/attributes you (think|should)/];
-  // L2: specifics, details, sequence, who/what/when/where
   const l2patterns = [/walk me through/,/what happened (first|next|then|after)/,/who was (there|involved)/,/how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,/what (specifically|exactly)/,/tell me more about/,/what did (you|they|he|she) (do|say|decide)/,/how did (it|that|you|they) (work|start|end|begin|happen)/,/what (was|were) (the|your) (process|steps|plan|approach)/,/how has (it|that|being) .{0,30}\?/,/what (does|did) (your|the) (day|week|role|work|schedule)/,/do (we|you) have that many/];
-  // L1: open, safe, introductory
   const l1patterns = [/what do you do/,/tell me about (yourself|your)/,/how (are|is|was) (things|it|everything|school|work|life)/,/what('s| is) (your|a typical|life|it) like/,/what (brings|got) you (here|to|into)/,/can you (start by|begin by|introduce)/,/who are you/,/like what does your life look like/,/both in and outside/,/introducing yourself/];
   for (const p of l3patterns) if (p.test(t)) return 3;
   for (const p of l2patterns) if (p.test(t)) return 2;
   for (const p of l1patterns) if (p.test(t)) return 1;
-  // heuristic: if it ends with ? and has >6 words, guess by question word
   if (t.includes('?')) {
     if (/\b(why|what.*mean|how.*feel|what.*changed|reflect)\b/.test(t)) return 3;
     if (/\b(how|when|where|who|which|describe|walk|specific|example)\b/.test(t)) return 2;
@@ -827,22 +974,14 @@ function classifyQuestionLevel(q) {
 // ─────────────────────────────────────────────
 
 function parseTranscript(raw, interviewer, respondent) {
-  // ── Pre-clean: strip common transcript export artifacts ──
   let cleaned = raw
     .replace(/\r\n/g, '\n')
-    // Inline timestamps: [00:01:23] or (00:01:23)
     .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
-    // Bold markdown: **Name**
     .replace(/\*\*([^*]+)\*\*/g, '$1')
-    // Trailing timestamps on speaker lines (Otter: "Kaitlin  0:04")
     .replace(/\s{2,}\d{1,2}:\d{2}(?::\d{2})?\s*$/gm, '')
     .replace(/^[ \t]+|[ \t]+$/gm, '');
 
   const lines = cleaned.split('\n');
-
-  // ── Detect format ──
-  // Format A: "Name: text" on same line  (standard / most exports after cleanup)
-  // Format B: "Name" on one line, text on next (raw Otter.ai export)
   const formatALines = lines.filter(l => /^[^:\n]{1,40}:\s+\S/.test(l.trim()));
   const formatBLines = lines.filter(l => /^\S[^:\n]{0,38}$/.test(l.trim()) && l.trim().length < 35);
   const useFormatB = formatALines.length < 3 && formatBLines.length >= 2;
@@ -850,17 +989,13 @@ function parseTranscript(raw, interviewer, respondent) {
   const turns = [];
 
   if (useFormatB) {
-    // Format B: speaker name alone on a line, followed by their text
-    // Known speaker names are short lines that repeat
     const nameCandidates = {};
     lines.forEach(l => {
       const t = l.trim();
       if (t.length > 0 && t.length < 35 && !/[.!?,]/.test(t) && !/\d{1,2}:\d{2}/.test(t))
         nameCandidates[t.toUpperCase()] = (nameCandidates[t.toUpperCase()]||0)+1;
     });
-    // Speaker names appear multiple times
     const speakerNames = new Set(Object.entries(nameCandidates).filter(([,v])=>v>=2).map(([k])=>k));
-
     let currentSpeaker = null;
     for (const line of lines) {
       const trimmed = line.trim();
@@ -872,13 +1007,11 @@ function parseTranscript(raw, interviewer, respondent) {
         currentSpeaker = trimmed.toUpperCase();
       } else if (currentSpeaker) {
         turns.push({ speaker: currentSpeaker, text: trimmed });
-        // Don't reset — Otter sometimes puts multiple text lines per speaker
       } else {
         if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
       }
     }
   } else {
-    // Format A: "Name: text" or "Name - text" on same line
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
@@ -929,25 +1062,37 @@ function countFillers(text) {
 function detectMoves(text, prevRespondentText, isInterviewer) {
   const moves = [];
   const lower = text.toLowerCase().trim();
+  const encouragerExclusion = /\b(so my (next|last|first|other) question|moving on|changing (topics?|directions?|gears)|i (agree|think|believe|also|personally)|because|that reminds me|speaking of|anyway,? (so|let'?s)|now,? (let'?s|i want))\b/i;
 
-  // Check all pattern-based moves
   for (const def of MOVE_DEFS) {
     if (def.key === 'followup') continue;
     for (const pat of def.patterns) {
       if (pat.test(lower)) {
+        if (def.key === 'encourager' && encouragerExclusion.test(lower)) break;
         moves.push(def.key);
         break;
       }
     }
   }
 
-  // Follow-up: question that references something from previous response
   if (isInterviewer && text.includes('?') && prevRespondentText) {
     const prevWords = new Set(prevRespondentText.toLowerCase().split(/\W+/).filter(w => w.length > 4));
     const thisWords = lower.split(/\W+/);
     const overlap = thisWords.filter(w => w.length > 4 && prevWords.has(w));
     if (overlap.length >= 1 && !moves.includes('followup')) {
       moves.push('followup');
+    }
+  }
+
+  if (isInterviewer && text.includes('?')) {
+    const questionIdx = text.indexOf('?');
+    const preamble = text.slice(0, questionIdx);
+    const preambleWords = preamble.trim().split(/\s+/).length;
+    if (preambleWords >= 20 && !moves.includes('onramp') && !moves.includes('bridge') && !moves.includes('circling')) {
+      const reactiveSignals = /\b(you (said|mentioned|told|described|talked|went|were)|from what (you|i)|what you|your (story|dad|journey|experience|answer|crossing|group|friend)|i (heard|noticed|could tell|didn't know|imagine|think)|we (know|talked|can tell)|all (of )?that|sounds like|that must|honestly)\b/i;
+      if (reactiveSignals.test(preamble)) {
+        moves.push('onramp');
+      }
     }
   }
 
@@ -959,17 +1104,14 @@ function detectMoves(text, prevRespondentText, isInterviewer) {
 // ─────────────────────────────────────────────
 
 function detectDrift(respondentText, questionText) {
-  if (!questionText || respondentText.split(/\s+/).length < 30) return null;
-  // Extract key nouns from question
+  if (!questionText || respondentText.split(/\s+/).length < 20) return null;
   const qWords = new Set(questionText.toLowerCase().split(/\W+/).filter(w => w.length > 4));
   const sentences = respondentText.split(/[.!?]+/).filter(s => s.trim().length > 10);
   if (sentences.length < 3) return null;
-  // Check if last 2 sentences share little vocabulary with question
   const lastTwo = sentences.slice(-2).join(' ').toLowerCase();
   const lastWords = lastTwo.split(/\W+/).filter(w => w.length > 4);
   const overlap = lastWords.filter(w => qWords.has(w)).length;
   if (overlap === 0 && lastWords.length > 8) {
-    // Summarize what the drift was about
     const driftSnippet = sentences[sentences.length-1].trim().slice(0,80);
     return `Response may drift toward end — last thought: "${driftSnippet}..."`;
   }
@@ -987,45 +1129,29 @@ function analyzeVoice(turns, speaker) {
   const wordCount = words.length;
   if (wordCount < 10) return null;
 
-  // Avg sentence length
   const sentences = allText.split(/[.!?]+/).filter(s => s.trim().length > 4);
   const avgSentLen = sentences.length ? Math.round(words.length / sentences.length) : 0;
 
-  // Idiom / figurative language detection
-  const idioms = [
-    'throw the spaghetti','pick yourself up','dust yourself off','center won','things fall apart',
-    'naval gazing','let it rip','bump heads','in the arena','ruffling feathers','tip of the iceberg',
-    'silver lining','bite the bullet','back seat','sidelines','head down','shoulder to the wheel',
-    'on the shelf','hit the ground running','under the radar','move the needle','talk is cheap',
-    'armchair','bell rings','sour grape','nothing stopping','keeping your head','read the room',
-    'fly in the face','close the tab','ground floor','light touch','full steam','move mountains'
-  ];
+  const idioms = ['throw the spaghetti','pick yourself up','dust yourself off','center won','things fall apart','naval gazing','let it rip','bump heads','in the arena','ruffling feathers','tip of the iceberg','silver lining','bite the bullet','back seat','sidelines','head down','shoulder to the wheel','on the shelf','hit the ground running','under the radar','move the needle','talk is cheap','armchair','bell rings','sour grape','nothing stopping','keeping your head','read the room','fly in the face','close the tab','ground floor','light touch','full steam','move mountains','take for granted','long story short','true colors','chipped in','took the lead','hit the bottom','american dream','figure it out','at the bottom of his heart','pick their brain','come in handy','go after it','make me proud','write a whole book','light at the end','god writes things','writes things','god gave you','two ears and one mouth','shoes','freaking out','showing the true'];
   const foundIdioms = idioms.filter(id => allText.toLowerCase().includes(id));
 
-  // Figurative language (simile/metaphor signals)
   const figPatterns = [/\blike a\b/,/\bas (if|though|a)\b/,/\bis a\b.*\bnot a\b/,/\bmetaphor(ically)?\b/,/\bsymbol\b/];
   const figCount = figPatterns.filter(p => p.test(allText)).length;
 
-  // Diction level (rough heuristic: ratio of long words)
-  const longWords = words.filter(w => w.length >= 8).length;
-  const dictionLevel = Math.round((longWords / wordCount) * 100);
-  let dictionNote = dictionLevel > 22 ? 'Academic / elevated' : dictionLevel > 14 ? 'Conversational / accessible' : 'Simple / informal';
+  const dictionLevel = avgSentLen;
+  let dictionNote = avgSentLen >= 20 ? 'Developed / elaborated' : avgSentLen >= 12 ? 'Conversational / moderate' : 'Clipped / brief';
 
-  // Question ratio (for interviewer)
   const questionCount = speakerTurns.filter(t => t.text.includes('?')).length;
   const questionRatio = speakerTurns.length ? Math.round((questionCount / speakerTurns.length) * 100) : 0;
 
-  // Tone signals
   const wrySignals = ['let me tell you','right?','no?','you get the idea','not that i','as if','supposedly','allegedly','of course','naturally'];
   const wryCount = wrySignals.filter(w => allText.toLowerCase().includes(w)).length;
   const toneNote = wryCount >= 2 ? 'Wry / dry wit present' : wryCount === 1 ? 'Occasional dry tone' : 'Relatively neutral';
 
-  // Sentence variety
   const shortSent = sentences.filter(s => s.trim().split(/\s+/).length < 8).length;
   const longSent  = sentences.filter(s => s.trim().split(/\s+/).length > 25).length;
   const varietyNote = shortSent > 0 && longSent > 0 ? 'Good rhythm variation' : longSent > shortSent * 2 ? 'Tends toward long sentences' : 'Tends toward short/clipped sentences';
 
-  // Avg words per turn (response length metric for respondent)
   const avgWordsPerTurn = speakerTurns.length ? Math.round(wordCount / speakerTurns.length) : 0;
   let responseLength = avgWordsPerTurn > 120 ? 'Very extended (120+ words/turn)' : avgWordsPerTurn > 70 ? 'Developed (70–120 words/turn)' : avgWordsPerTurn > 30 ? 'Moderate (30–70 words/turn)' : 'Brief (under 30 words/turn)';
 
@@ -1039,20 +1165,12 @@ function analyzeVoice(turns, speaker) {
 function computeScores(turns, interviewer, respondent, moves, levels, fillerTotals) {
   const interviewerTurns = turns.filter(t => t.speaker === interviewer);
   const respondentTurns  = turns.filter(t => t.speaker === respondent);
-
-  const totalMoves = Object.values(moves).reduce((a,b) => a+b, 0);
-
-  // Listening presence: move variety + encouragers used appropriately (out of 5)
   const moveTypes = Object.values(moves).filter(v => v > 0).length;
   const listeningScore = Math.min(5, Math.round((moveTypes / 6) * 5));
-
-  // Question quality: level distribution + follow-up count (out of 5)
   const l3count = levels.filter(l => l === 3).length;
   const l2count = levels.filter(l => l === 2).length;
   const totalQ  = levels.length;
   const qScore  = totalQ > 0 ? Math.min(5, Math.round(((l2count + l3count*1.5) / totalQ) * 5)) : 1;
-
-  // Structural flow: arc (L1→L2→L3 progression) (out of 5)
   let arcScore = 3;
   if (levels.length >= 3) {
     const firstThird = levels.slice(0, Math.ceil(levels.length/3));
@@ -1063,8 +1181,6 @@ function computeScores(turns, interviewer, respondent, moves, levels, fillerTota
     else if (avgLast >= avgFirst) arcScore = 4;
     else if (avgLast < avgFirst - 0.5) arcScore = 2;
   }
-
-  // Balance: respondent should have more words (out of 5)
   const iWords = interviewerTurns.map(t => t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
   const rWords  = respondentTurns.map(t => t.text.split(/\s+/).length).reduce((a,b)=>a+b,0);
   const totalWords = iWords + rWords;
@@ -1074,13 +1190,9 @@ function computeScores(turns, interviewer, respondent, moves, levels, fillerTota
   else if (rPct >= 0.45 && rPct <= 0.90) balanceScore = 4;
   else if (rPct >= 0.35 && rPct <= 0.95) balanceScore = 3;
   else balanceScore = 2;
-
-  // Filler penalty (out of 5) — 1% increments
-  const fillerRate = totalWords > 0 ? (fillerTotals.interviewer / (iWords||1)) : 0;
-  const fillerScore = fillerRate < 0.01 ? 5 : fillerRate < 0.02 ? 4 : fillerRate < 0.03 ? 3 : fillerRate < 0.04 ? 2 : 1;
-
+  const fillerRate = iWords > 0 ? (fillerTotals.interviewer / iWords) : 0;
+  const fillerScore = fillerRate < 0.05 ? 5 : fillerRate < 0.10 ? 4 : fillerRate < 0.15 ? 3 : fillerRate < 0.20 ? 2 : 1;
   const overall = listeningScore + qScore + arcScore + balanceScore + fillerScore;
-
   return { listeningScore, qScore, arcScore, balanceScore, fillerScore, overall, iWords, rWords, totalWords };
 }
 
@@ -1110,41 +1222,168 @@ function drawPie(canvas, data) {
 }
 
 // ─────────────────────────────────────────────
-// HIGHLIGHT TEXT
+// FIX #1: Annotation pipeline — raw text first, HTML injected last
+// Previously, highlightFillers ran before highlightMoves, meaning regex
+// patterns fired on HTML strings with embedded <span> tags. Now we collect
+// all annotation ranges on plain text, then inject HTML once at the end.
 // ─────────────────────────────────────────────
 
-function highlightFillers(text) {
-  let out = text;
-  for (const f of FILLERS) {
-    const re = new RegExp('\\b(' + f.replace(/\s+/g,'\\s+') + ')\\b','gi');
-    out = out.replace(re, `<span class="highlight hl-filler">$1</span>`);
-  }
-  return out;
+/**
+ * Escape special HTML characters in a plain-text string.
+ */
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function highlightMoves(text, moveResults) {
-  let out = text;
-  for (const def of MOVE_DEFS) {
-    if (def.key === 'followup') continue;
-    for (const pat of def.patterns) {
-      out = out.replace(pat, (match) =>
-        `<span class="highlight hl-${def.key}">${match}</span><span class="tag tag-${def.key}">${def.label}</span>`
-      );
+/**
+ * Build annotated HTML for an interviewer turn.
+ * All pattern matching runs on raw plain text. HTML is injected once.
+ */
+function buildInterviewerHtml(rawText, moveKeys, level, isFollowup) {
+  // ── 1. Collect filler spans on raw text ──
+  const fillerRanges = [];
+  for (const f of FILLERS) {
+    const re = new RegExp('\\b' + f.replace(/\s+/g,'\\s+') + '\\b','gi');
+    let m;
+    while ((m = re.exec(rawText)) !== null) {
+      fillerRanges.push({ start: m.index, end: m.index + m[0].length, type: 'filler', matchText: m[0] });
     }
   }
-  return out;
+
+  // ── 2. Collect move spans on raw text ──
+  const moveRanges = [];
+  const activeMoveKeys = new Set(moveKeys || []);
+  for (const def of MOVE_DEFS) {
+    if (def.key === 'followup') continue;
+    if (!activeMoveKeys.has(def.key)) continue;
+    for (const pat of def.patterns) {
+      const gPat = new RegExp(pat.source, pat.flags.includes('g') ? pat.flags : pat.flags + 'g');
+      let m;
+      while ((m = gPat.exec(rawText)) !== null) {
+        moveRanges.push({ start: m.index, end: m.index + m[0].length, key: def.key, label: def.label, matchText: m[0] });
+      }
+    }
+  }
+
+  // ── 3. Collect question-level spans (sentence by sentence, safe Safari split) ──
+  const levelRanges = [];
+  if (level > 0 && rawText.includes('?')) {
+    // FIX #2: replace lookbehind /(?<=[.!?])\s+/ with a safe alternative
+    // Split on punctuation, keeping the delimiter, then rejoin into sentence chunks
+    const parts = rawText.split(/([.!?])/);
+    let pos = 0;
+    let i = 0;
+    while (i < parts.length) {
+      const chunk = parts[i];
+      const punct = parts[i+1] || '';
+      const sentence = chunk + punct;
+      const sentStart = pos;
+      const sentEnd = pos + sentence.length;
+      if (sentence.includes('?')) {
+        levelRanges.push({ start: sentStart, end: sentEnd, level, isFollowup, matchText: sentence });
+      }
+      pos = sentEnd;
+      // skip whitespace between sentences
+      if (i + 2 < parts.length && /^\s+$/.test(parts[i+2])) {
+        pos += parts[i+2].length;
+        i += 3;
+      } else {
+        i += 2;
+      }
+    }
+  }
+
+  // ── 4. Merge all ranges and build HTML ──
+  // Simple approach: build output char by char, inserting tags at boundaries
+  // Priority: level > move > filler (moves and level don't overlap in practice)
+  // We render tags as suffix annotations rather than nested spans to avoid overlap issues.
+
+  // Sort all range starts; render plain text and append tags after each range
+  const allRanges = [
+    ...fillerRanges.map(r => ({ ...r, renderType: 'filler' })),
+    ...moveRanges.map(r => ({ ...r, renderType: 'move' })),
+    ...levelRanges.map(r => ({ ...r, renderType: 'level' })),
+  ].sort((a, b) => a.start - b.start || b.end - a.end);
+
+  let html = '';
+  let cursor = 0;
+  const used = new Set(); // prevent duplicate tag output for same range
+
+  for (const range of allRanges) {
+    const rangeKey = `${range.start}-${range.end}-${range.renderType}`;
+    if (used.has(rangeKey)) continue;
+    used.add(rangeKey);
+
+    if (range.start < cursor) continue; // skip fully overlapping ranges
+
+    // plain text before this range
+    html += escapeHtml(rawText.slice(cursor, range.start));
+
+    const matchEscaped = escapeHtml(rawText.slice(range.start, range.end));
+
+    if (range.renderType === 'filler') {
+      html += `<span class="highlight hl-filler">${matchEscaped}</span>`;
+    } else if (range.renderType === 'move') {
+      html += `<span class="highlight hl-${range.key}">${matchEscaped}</span><span class="tag tag-${range.key}">${range.label}</span>`;
+    } else if (range.renderType === 'level') {
+      const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
+      const lLabel = levelLabels[range.level] || `L${range.level}`;
+      const followupTag = range.isFollowup ? `<span class="tag tag-followup">Follow-up Question</span>` : '';
+      html += `<span class="highlight hl-l${range.level}">${matchEscaped}</span><span class="tag tag-l${range.level}">${lLabel}</span>${followupTag}`;
+    }
+
+    cursor = range.end;
+  }
+
+  // remainder
+  html += escapeHtml(rawText.slice(cursor));
+
+  // Stacked move summary
+  const stackedMoves = (moveKeys || []).filter(k => k !== 'followup');
+  if (stackedMoves.length >= 2) {
+    const stackLabels = stackedMoves.map(k => {
+      const d = MOVE_DEFS.find(m => m.key === k);
+      return d ? d.label : k;
+    }).join(' + ');
+    html += ` <span class="tag" style="background:#e8e8e8;color:#555;border:1px solid #ccc;font-size:7pt;opacity:0.8;">⊕ ${stackLabels}</span>`;
+  }
+
+  return html;
 }
 
-function highlightQuestionLevel(text, level) {
-  if (!text.includes('?') || level === 0) return text;
-  const cls = `hl-l${level}`;
-  const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
-  const label = levelLabels[level] || `L${level}`;
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  return sentences.map(s => {
-    if (s.includes('?')) return `<span class="highlight ${cls}">${s}</span><span class="tag tag-l${level}">${label}</span>`;
-    return s;
-  }).join(' ');
+/**
+ * Build annotated HTML for a respondent turn (fillers + drift marker).
+ */
+function buildRespondentHtml(rawText, hasDrift) {
+  const fillerRanges = [];
+  for (const f of FILLERS) {
+    const re = new RegExp('\\b' + f.replace(/\s+/g,'\\s+') + '\\b','gi');
+    let m;
+    while ((m = re.exec(rawText)) !== null) {
+      fillerRanges.push({ start: m.index, end: m.index + m[0].length, matchText: m[0] });
+    }
+  }
+  fillerRanges.sort((a,b) => a.start - b.start);
+
+  let html = '';
+  let cursor = 0;
+  for (const range of fillerRanges) {
+    if (range.start < cursor) continue;
+    html += escapeHtml(rawText.slice(cursor, range.start));
+    html += `<span class="highlight hl-filler">${escapeHtml(rawText.slice(range.start, range.end))}</span>`;
+    cursor = range.end;
+  }
+  html += escapeHtml(rawText.slice(cursor));
+
+  if (hasDrift) {
+    html += ` <span class="highlight hl-drift"><span class="tag tag-drift">⚠ Drift</span></span>`;
+  }
+
+  return html;
 }
 
 // ─────────────────────────────────────────────
@@ -1158,7 +1397,6 @@ function analyze() {
   let interviewer = document.getElementById('interviewerName').value.trim().toUpperCase();
   let respondent  = document.getElementById('respondentName').value.trim().toUpperCase();
 
-  // Auto-detect if not provided
   const turns = parseTranscript(raw, interviewer, respondent);
   const speakers = [...new Set(turns.map(t=>t.speaker).filter(s=>s!=='NARRATOR'))];
   if (!interviewer && speakers.length >= 1) interviewer = speakers[0];
@@ -1187,7 +1425,8 @@ function analyze() {
   const turnDrifts = [];
   const missedOpps = [];
 
-  let prevWasEncourager = false;
+  // FIX #3: consecutiveEncouragers resets on respondent turns, not just
+  // when the interviewer asks a non-encourager question.
   let consecutiveEncouragers = 0;
 
   for (let i = 0; i < turns.length; i++) {
@@ -1200,12 +1439,10 @@ function analyze() {
       moves.forEach(m => moveTotals[m] = (moveTotals[m]||0)+1);
       turnMoves.push(moves);
 
-      // Question level
       const level = classifyQuestionLevel(turn.text);
       turnLevels.push(level);
       if (level > 0) questionLevels.push(level);
 
-      // Missed opportunities: only flag consecutive encouragers (2+ in a row without a question)
       if (moves.includes('encourager') && !turn.text.includes('?')) {
         consecutiveEncouragers++;
         if (consecutiveEncouragers >= 2) {
@@ -1217,9 +1454,23 @@ function analyze() {
         consecutiveEncouragers = 0;
       }
 
+      const reactiveOpeners = /^(okay|wow|all right|alright|that'?s (very good|interesting|incredible|wild|crazy|a lot|good)|oh my god|i (honestly|didn't know|could tell)|um,? (okay|wow|all right)|right,? (so|okay))[,.]?\s/i;
+      const turnLevel = turnLevels[i] || 0;
+      if (
+        turn.text.includes('?') &&
+        turnLevel === 1 &&
+        reactiveOpeners.test(turn.text.trim()) &&
+        prevRespondentText.split(/\s+/).length >= 60
+      ) {
+        const prevSnippet = prevRespondentText.trim().slice(0, 80);
+        missedOpps.push({ idx: i, text: `Rich moment acknowledged ("${turn.text.trim().slice(0,50)}...") but followed by a surface-level question. Consider drilling deeper into what was just shared: <em>"${prevSnippet}..."</em>` });
+      }
+
       turnDrifts.push(null);
     } else if (isRes) {
-      // Drift detection
+      // FIX #3: reset encourager counter when respondent speaks
+      consecutiveEncouragers = 0;
+
       const prevQuestion = turns.slice(0, i).reverse().find(t => t.speaker === interviewer);
       const drift = prevQuestion ? detectDrift(turn.text, prevQuestion.text) : null;
       turnDrifts.push(drift);
@@ -1234,7 +1485,8 @@ function analyze() {
   }
 
   // ── Scores ──
-  const scores = computeScores(turns, interviewer, respondent, moveTotals, questionLevels, { interviewer: iFillers.total, respondent: rFillers.total });
+  const fillerTotals = { interviewer: iFillers.total, respondent: rFillers.total };
+  const scores = computeScores(turns, interviewer, respondent, moveTotals, questionLevels, fillerTotals);
 
   // ── Voice analysis ──
   const iVoice = analyzeVoice(turns, interviewer);
@@ -1243,11 +1495,12 @@ function analyze() {
   // ─────────────── RENDER ───────────────
 
   document.getElementById('results').style.display = 'block';
+  document.getElementById('pdfBar').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // PIE
   const pieCanvas = document.getElementById('pieChart');
-  const iColor = '#7ec8e3', rColor = '#f4a261'; // pastel sky blue / warm coral
+  const iColor = '#7ec8e3', rColor = '#f4a261';
   drawPie(pieCanvas, [
     { value: iPct, color: iColor },
     { value: rPct, color: rColor },
@@ -1280,16 +1533,16 @@ function analyze() {
     if (cnt === 0) return '';
     return `<div class="move-chip tag-${def.key}" style="background:${def.color};border:1px solid;"><span class="cnt">${cnt}</span> ${def.label}</div>`;
   }).join('');
-  const totalMoves = Object.values(moveTotals).reduce((a,b)=>a+b,0);
   document.getElementById('moveCount').innerHTML = `
     <div class="move-grid">${moveHtml || '<em style="font-size:9pt;color:#aaa">No moves detected</em>'}</div>
   `;
 
-  // MOVE SUMMARY BAR (below dashboard)
+  // MOVE SUMMARY BAR
   const verbalDefs    = MOVE_DEFS.filter(d => d.cat === 'verbal');
   const structDefs    = MOVE_DEFS.filter(d => d.cat === 'structural');
   const verbHtml  = verbalDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
   const structHtml= structDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
+  const totalMoves = Object.values(moveTotals).reduce((a,b)=>a+b,0);
   document.getElementById('moveSummaryGrid').innerHTML = `
     <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:6px;grid-column:1/-1;">Verbal Moves</div>
     ${verbHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
@@ -1323,7 +1576,7 @@ function analyze() {
     <div class="level-track">
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L1 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Open the Door — Safe, broad, tone-setting questions that invite the respondent in. Examples: "What do you do?" / "Tell me about yourself." These questions don't pressure — they warm the room.</span></span></span>
+          <span class="level-label">L1 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Open the Door — Safe, broad, tone-setting questions that invite the respondent in.</span></span></span>
           <span class="level-sublabel">Open the Door</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l1" style="width:${Math.round(l1/maxL*100)}%"></div></div>
@@ -1331,7 +1584,7 @@ function analyze() {
       </div>
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L2 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Gather Details — Questions that ask for specifics: sequence, names, dates, process. Examples: "Walk me through what happened." / "Who was there?" These questions build the factual shape of the story.</span></span></span>
+          <span class="level-label">L2 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Gather Details — Questions that ask for specifics: sequence, names, dates, process.</span></span></span>
           <span class="level-sublabel">Gather Details</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l2" style="width:${Math.round(l2/maxL*100)}%"></div></div>
@@ -1339,7 +1592,7 @@ function analyze() {
       </div>
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L3 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Unlock the Meaning — Questions that push toward reflection, significance, and change. Examples: "What did that teach you?" / "How has that shaped how you see things?" These are the hardest to ask — and the most important.</span></span></span>
+          <span class="level-label">L3 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Unlock the Meaning — Questions that push toward reflection, significance, and change.</span></span></span>
           <span class="level-sublabel">Unlock Meaning</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l3" style="width:${Math.round(l3/maxL*100)}%"></div></div>
@@ -1351,33 +1604,24 @@ function analyze() {
 
   // SCORES
   const scoreItems = [
-    { label:'Listening Moves',  score: scores.listeningScore,
-      tip: 'How many distinct move types you used — paraphrasis, follow-ups, reflection, on-ramps, etc. More variety = higher score. Maxes at 5 when you hit 6+ different move types.' },
-    { label:'Question Quality', score: scores.qScore,
-      tip: 'Weighted by question level. L2 questions count once, L3 questions count 1.5×. A high score means you pushed past the surface and asked questions that demanded reflection.' },
-    { label:'Arc / Structure',  score: scores.arcScore,
-      tip: 'Did your question levels build over the conversation? Compares the avg level in the first third vs. the last third. A good arc moves L1 → L2 → L3, not the other way around.' },
-    { label:'Talk Balance',     score: scores.balanceScore,
-      tip: 'What share of the words the respondent spoke vs. you. Ideal range: respondent speaks 55–80% of the time. If you\'re doing most of the talking, this score drops.' },
-    { label:'Filler Control',   score: scores.fillerScore,
-      tip: 'Your filler word rate as a % of total words spoken (um, uh, like, you know, etc.). Under 1% = 5/5. Each additional 1% drops the score a point — so 4%+ = 1/5.' },
+    { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used. More variety = higher score.' },
+    { label:'Question Quality', score: scores.qScore,         tip: 'Weighted by level. L2 counts once, L3 counts 1.5×.' },
+    { label:'Arc / Structure',  score: scores.arcScore,       tip: 'Did question levels build? Compares avg level in first vs. last third.' },
+    { label:'Talk Balance',     score: scores.balanceScore,   tip: 'Ideal: respondent speaks 55–80%. Score drops if you dominate.' },
+    { label:'Filler Control',   score: scores.fillerScore,    tip: 'Interviewer filler rate only. Under 5% = 5/5. Lose a point every 5%.' },
   ];
   const scoreHtml = scoreItems.map(s => `
     <div class="score-bar-wrap">
       <div class="score-row">
-        <span class="score-left">
-          ${s.label}
-          <span class="score-info">?<span class="score-tooltip">${s.tip}</span></span>
-        </span>
+        <span class="score-left">${s.label}<span class="score-info">?<span class="score-tooltip">${s.tip}</span></span></span>
         <span>${s.score}/5</span>
       </div>
       <div class="score-bar-bg"><div class="score-bar-fill" style="width:${s.score/5*100}%"></div></div>
     </div>
   `).join('');
-  const overall = scores.overall;
   document.getElementById('scoreDisplay').innerHTML = `
     <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
-      <div class="score-big">${overall}<span style="font-size:18pt;color:#aaa;">/25</span></div>
+      <div class="score-big">${scores.overall}<span style="font-size:18pt;color:#aaa;">/25</span></div>
       <div class="score-label">Overall Score</div>
     </div>
     ${scoreHtml}
@@ -1390,27 +1634,29 @@ function analyze() {
       ? `<em>"${v.foundIdioms.slice(0,3).join('", "')}"</em>`
       : 'None detected';
     const tooltip = (text) => `<span class="score-info" style="font-size:7pt;margin-left:4px;">?<span class="score-tooltip" style="width:200px;">${text}</span></span>`;
+    // FIX #11 (minor): use singular/plural correctly for idiom count
+    const idiomCountWord = v.foundIdioms.length === 1 ? 'idiom' : 'idioms';
     return `
       <div class="${isInt ? 'voice-col-int' : 'voice-col-resp'}">
         <div class="voice-item">
-          <div class="vk">Diction Level ${tooltip('Measured by the ratio of long words (8+ characters) to total words spoken. Under 14% = Simple/Informal. 14–22% = Conversational. Above 22% = Academic/Elevated. It\'s a rough proxy for vocabulary range — not a judgment on quality.')}</div>
-          <div class="vv">${v.dictionNote} <span style="color:#bbb;font-size:8pt;">(${v.dictionLevel}%)</span></div>
+          <div class="vk">Elaboration Rate ${tooltip('Avg words per sentence. Under 12 = Clipped. 12–20 = Conversational. 20+ = Developed.')}</div>
+          <div class="vv">${v.dictionNote} <span style="color:#bbb;font-size:8pt;">(~${v.dictionLevel} words/sentence)</span></div>
         </div>
         <div class="voice-item">
           <div class="vk">Sentence Length</div>
           <div class="vv">~${v.avgSentLen} words · ${v.varietyNote}</div>
         </div>
         <div class="voice-item">
-          <div class="vk">Idioms &amp; Colloquialisms ${tooltip('Idioms and colloquialisms are expressions whose meaning can\'t be taken literally — they carry cultural or contextual weight. "Throw the spaghetti at the wall" doesn\'t mean pasta. They reveal voice, personality, and how someone actually thinks in language.')}</div>
-          <div class="vv">${idiomLine}</div>
+          <div class="vk">Idioms &amp; Colloquialisms ${tooltip('Expressions whose meaning can\'t be taken literally. Reveal voice and personality.')}</div>
+          <div class="vv">${v.foundIdioms.length > 0 ? `${v.foundIdioms.length} ${idiomCountWord} found — ` : ''}${idiomLine}</div>
         </div>
         <div class="voice-item">
-          <div class="vk">Tone ${tooltip('Detected by scanning for dry wit markers — phrases like "right?", "of course", "not that I", "naturally", "you get the idea." Two or more of these in a transcript suggest a wry, ironic register. It\'s imprecise but picks up on conversational self-awareness.')}</div>
+          <div class="vk">Tone ${tooltip('Detected by dry wit markers: "right?", "of course", "naturally", etc. Two or more suggest a wry register.')}</div>
           <div class="vv">${v.toneNote}</div>
         </div>
         ${isInt
-          ? `<div class="voice-item"><div class="vk">Question Rate ${tooltip('The percentage of the interviewer\'s turns that contained at least one question mark. A high rate (60%+) suggests active, curious engagement. A low rate might mean you were talking more than probing.')}</div><div class="vv">${v.questionRatio}% of turns asked a question</div></div>`
-          : `<div class="voice-item"><div class="vk">Response Length ${tooltip('Average number of words the respondent spoke per turn. Brief = under 30 words. Moderate = 30–70. Developed = 70–120. Very Extended = 120+. Longer responses give the interviewer more material to follow up on — but can also signal the respondent is running away with the conversation.')}</div><div class="vv">${v.responseLength} <span style="color:#bbb;font-size:8pt;">(~${v.avgWordsPerTurn} words/turn)</span></div></div>`
+          ? `<div class="voice-item"><div class="vk">Question Rate ${tooltip('% of interviewer turns containing a question mark.')}</div><div class="vv">${v.questionRatio}% of turns asked a question</div></div>`
+          : `<div class="voice-item"><div class="vk">Response Length ${tooltip('Avg words per respondent turn. Brief <30 · Moderate 30–70 · Developed 70–120 · Very Extended 120+.')}</div><div class="vv">${v.responseLength} <span style="color:#bbb;font-size:8pt;">(~${v.avgWordsPerTurn} words/turn)</span></div></div>`
         }
       </div>
     `;
@@ -1453,7 +1699,7 @@ function analyze() {
     `;
   }
 
-  // LEGEND (three-column grid matching exemplar)
+  // LEGEND
   document.getElementById('legendGrid').innerHTML = `
     <div class="legend-col">
       <h3>Verbal Moves</h3>
@@ -1475,12 +1721,12 @@ function analyze() {
       <div class="legend-item"><div class="legend-swatch hl-l2"></div><div class="legend-text"><strong>L2 — Gather Details</strong><span>Specifics, sequence, recall</span></div></div>
       <div class="legend-item"><div class="legend-swatch hl-l3"></div><div class="legend-text"><strong>L3 — Unlock the Meaning</strong><span>Reflection, significance, "why it matters"</span></div></div>
       <h3 style="margin-top:12px;">Other</h3>
-      <div class="legend-item"><div class="legend-swatch" style="border-bottom:2.5px dotted #b02020;background:transparent;"></div><div class="legend-text"><strong>Filler Word</strong><span>um, uh, like, you know…</span></div></div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f9f200;border:1px solid #d4c800;border-radius:2px;"></div><div class="legend-text"><strong>Verbal Filler</strong><span>um, uh, like, you know…</span></div></div>
       <div class="legend-item"><div class="legend-swatch hl-drift"></div><div class="legend-text"><strong>Tangential Drift</strong><span>Response strays from the question</span></div></div>
     </div>
   `;
 
-  // ANNOTATED TRANSCRIPT
+  // ANNOTATED TRANSCRIPT — FIX #1: use new pipeline functions
   let transcriptHtml = '';
   for (let i = 0; i < turns.length; i++) {
     const turn = turns[i];
@@ -1489,36 +1735,30 @@ function analyze() {
     const isNar = turn.speaker === 'NARRATOR';
 
     let labelClass = isInt ? '' : isRes ? 'respondent' : 'narrator';
-    let text = turn.text;
+    let renderedText;
 
     if (isInt) {
-      text = highlightFillers(text);
-      text = highlightMoves(text, turnMoves[i]);
       const lv = turnLevels[i];
-      if (lv > 0) text = highlightQuestionLevel(text, lv);
+      const isFollowup = turnMoves[i] && turnMoves[i].includes('followup');
+      renderedText = buildInterviewerHtml(turn.text, turnMoves[i], lv, isFollowup);
+    } else if (isRes) {
+      renderedText = buildRespondentHtml(turn.text, !!turnDrifts[i]);
+    } else {
+      renderedText = escapeHtml(turn.text);
     }
-    if (isRes) {
-      text = highlightFillers(text);
-      if (turnDrifts[i]) {
-        text += ` <span class="highlight hl-drift"><span class="tag tag-drift">⚠ Drift</span></span>`;
-      }
-    }
-
-    const displayName = isNar
-      ? `<span style="color:#bbb;font-style:italic;font-weight:normal;text-transform:none;letter-spacing:0;">[note]</span>`
-      : `<span class="turn-label ${labelClass}">${turn.speaker.charAt(0) + turn.speaker.slice(1).toLowerCase()}</span>`;
 
     transcriptHtml += `
       <div class="turn">
         <div class="turn-label ${labelClass}">${isNar ? '[note]' : turn.speaker.charAt(0) + turn.speaker.slice(1).toLowerCase()}</div>
-        <div class="turn-text">${text}</div>
+        <div class="turn-text">${renderedText}</div>
       </div>
     `;
   }
   document.getElementById('annotatedTranscript').innerHTML = transcriptHtml;
 
-  // COMMENTARY
-  function buildCommentary(voice, name, isInt, moveTotals, scores, questionLevels, missedOpps, drifts) {
+  // FIX #4: pass fillerTotals explicitly to buildCommentary
+  // buildCommentary no longer closes over the outer rFillers variable
+  function buildCommentary(voice, name, isInt, moveTotals, scores, questionLevels, missedOpps, drifts, fillerTotals) {
     const displayName = name.charAt(0) + name.slice(1).toLowerCase();
     const strengths = [], growth = [], flags = [];
 
@@ -1545,7 +1785,8 @@ function analyze() {
 
       if (drifts.length >= 2) growth.push('Answers drifted in multiple turns — practice ending your response where the question asked you to end.');
       if (voice && voice.avgSentLen > 30) growth.push('Some answers ran very long — try landing your key point, then pausing.');
-      if (rFillers.total > 10) growth.push('Filler words suggest processing out loud — it\'s natural, but practice pausing silently instead.');
+      // FIX #4: use passed-in fillerTotals instead of closing over outer variable
+      if (fillerTotals.respondent > 10) growth.push('Filler words suggest processing out loud — it\'s natural, but practice pausing silently instead.');
     }
 
     return `
@@ -1557,8 +1798,8 @@ function analyze() {
     `;
   }
 
-  document.getElementById('interviewerCommentary').innerHTML = buildCommentary(iVoice, interviewer, true, moveTotals, scores, questionLevels, missedOpps, []);
-  document.getElementById('respondentCommentary').innerHTML = buildCommentary(rVoice, respondent, false, moveTotals, scores, questionLevels, [], drifts);
+  document.getElementById('interviewerCommentary').innerHTML = buildCommentary(iVoice, interviewer, true,  moveTotals, scores, questionLevels, missedOpps, [],     fillerTotals);
+  document.getElementById('respondentCommentary').innerHTML  = buildCommentary(rVoice, respondent, false, moveTotals, scores, questionLevels, [],         drifts, fillerTotals);
 }
 
 // ─────────────────────────────────────────────
