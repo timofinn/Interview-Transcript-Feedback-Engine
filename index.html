@@ -188,10 +188,32 @@
   .score-big { font-size: 34px; font-weight: normal; color: #2a2a1e; line-height: 1; font-family: Georgia, serif; }
   .score-label { font-size: 8.5pt; font-family: Arial, sans-serif; color: #888; margin-top: 4px; }
   .score-bar-wrap { margin-top: 10px; }
-  .score-bar-bg { background: #ddd9cc; border-radius: 99px; height: 6px; margin-bottom: 7px; }
+  .score-bar-bg { background: #ddd9cc; border-radius: 99px; height: 6px; margin-bottom: 5px; }
   .score-bar-fill { height: 6px; border-radius: 99px; background: #2a5fa0; transition: width 0.6s; }
   .score-row { display: flex; justify-content: space-between; align-items: center; font-size: 8.5pt; font-family: Arial, sans-serif; color: #777; margin-bottom: 2px; }
   .score-row .score-left { display: flex; align-items: center; gap: 5px; }
+  /* Full-width score card grid */
+  .score-full-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-top: 4px;
+  }
+  @media (max-width: 700px) { .score-full-grid { grid-template-columns: 1fr 1fr; } }
+  .score-metric-col { display: flex; flex-direction: column; }
+  .score-metric-feedback {
+    font-family: Georgia, serif;
+    font-size: 8.5pt;
+    font-style: italic;
+    color: #666;
+    line-height: 1.5;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid #ede9df;
+  }
+  .score-metric-feedback.fb-good { color: #0f4020; }
+  .score-metric-feedback.fb-ok   { color: #5a3a00; }
+  .score-metric-feedback.fb-low  { color: #6a0000; }
 
   /* ─── Score tooltip ─── */
   .score-info {
@@ -553,6 +575,44 @@
   .tag-l2          { background: #dff5e1; color: #1e5c30; border: 1px solid #2a7a40; }
   .tag-l3          { background: #e8d5f5; color: #4a1a70; border: 1px solid #7b3fa0; }
 
+  /* ─── Emerging move tags ─── */
+  .tag-emerging {
+    background: #f8f4e8;
+    color: #7a6020;
+    border: 1px dashed #c4a540;
+    font-style: italic;
+    opacity: 0.85;
+    letter-spacing: 0.01em;
+  }
+  .hl-emerging {
+    background: rgba(255, 230, 120, 0.25);
+    border-bottom: 2px dashed #c4a540;
+  }
+  /* Emerging move callout block in commentary */
+  .emerging-callout {
+    background: #fffbec;
+    border: 1px dashed #c4a540;
+    border-left: 3px solid #c4a540;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-family: Georgia, serif;
+    font-size: 9pt;
+    font-style: italic;
+    color: #5a4010;
+    line-height: 1.6;
+  }
+  .emerging-callout strong {
+    font-style: normal;
+    color: #3a2800;
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
   /* ─── Commentary ─── */
   .commentary-section { margin-bottom: 36px; }
   .commentary-section h2 {
@@ -789,23 +849,27 @@ Finn: Really well, actually. I think..."></textarea>
       </div>
     </div>
 
-    <!-- Row 2: Question levels / Scores -->
-    <div class="dash-row" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
+    <!-- Row 2: Question levels full width -->
+    <div class="dash-row" style="margin-bottom:14px;">
       <div class="card">
         <h3>Question Level Progression</h3>
         <div id="levelDisplay"></div>
       </div>
-      <div class="card">
-        <h3>Performance Scores</h3>
-        <div id="scoreDisplay"></div>
-      </div>
     </div>
 
     <!-- Row 3: Voice analysis full width -->
-    <div style="margin-bottom:28px;">
+    <div style="margin-bottom:14px;">
       <div class="card">
         <h3>Voice &amp; Diction Analysis</h3>
         <div id="voiceDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Row 4: Performance Scores full width -->
+    <div class="dash-row" style="margin-bottom:28px;">
+      <div class="card" id="scoreCard">
+        <h3>Performance Scores</h3>
+        <div id="scoreDisplay"></div>
       </div>
     </div>
 
@@ -835,12 +899,50 @@ const FILLERS = ['um','uh','like','you know what i mean','you know','i mean','so
 const MOVE_DEFS = [
   { key:'paraphrase',  label:'Paraphrasis',           color:'#fde68a', cat:'verbal',     patterns:[
     /\bif i'?m hearing you\b/i,/\bso what you'?re saying\b/i,/\bso you'?re saying\b/i,/\bin other words\b/i,
-    /\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,/\bsounds like\b/i,
+    /\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,
+    // "sounds like" alone is too broad — scoped version below; raw form removed to prevent false positives
     /\bso basically what you'?re saying is\b/i,/\bit sounds like you (were|are|felt|feel)\b/i,
     /\bso you felt like\b/i,/\bif i'?m (understanding|hearing) (right|you|correctly)\b/i,
     /\bso it was (less|more) about\b/i,/\byou were (more|less) .{0,30} than\b/i,
     /\bgood,? your (dad|mom|family|friend) was\b/i,/\bfrom what (i could understand|you told me|you said|i heard)\b/i,
     /\bby you saying (all of this|that|this)\b/i,
+    // Informal / filler-heavy restatement — "so like what you're saying is", "so basically you're kinda saying"
+    /\bso (like |basically |kinda |kind of )?what you'?re (saying|getting at|trying to say) is\b/i,
+    /\bso (like |basically |kinda |kind of )?you'?re (kind of |basically |kinda )?(saying|telling me)\b/i,
+    // "Wait so you mean like..." — fragmented check-in
+    /\bwait[,]? so you (mean|were saying|'?re saying) (like |that |basically )?\b/i,
+    // "So it's kinda like you felt..." — loose interpretive framing
+    /\bso it'?s (kinda|kind of|basically|almost) like you (felt|were|had|wanted|needed|thought)\b/i,
+    // "It sounds like you were just kinda..." — hedged restatement
+    /\bit (sounds|seems) like you (were |are |just |kinda |kind of |basically )+(just |kinda |kind of |basically )?\w/i,
+    // "So what I'm hearing is kinda..." — first-person restatement with hedge
+    /\bso what i'?m (hearing|getting|understanding) is (kinda|kind of|basically|like|that)\b/i,
+    // "So like in a way you were..." — indirect interpretive frame
+    /\bso (like |basically )?in a way you (were|are|felt|had)\b/i,
+    // "So it wasn't really about X, it was more like..." — contrast restatement
+    /\bso it wasn'?t (really |just )?(about|that) .{0,40} it was (more|really|actually) (like|about|just)\b/i,
+    // "So you're basically just..." — compressed summary
+    /\bso you'?re (basically|essentially|kind of|kinda|just) (just )?\w/i,
+    // Multi-clause paraphrase opener — "So a couple things I'm hearing—you have..."
+    // Distinct from summarizing: anchored on interpretive unpacking, not closing
+    /\b(so |and )?(a couple|a few|some|two|three) (of )?things i'?m (hearing|getting|taking away|picking up)[—\-,:]/i,
+    // "It's more than just X" — contrast-based paraphrase clause
+    /\bit'?s (more than just|not just|not only|about more than) (wandering|a feeling|that|just)\b/i,
+    // "This time around, it's motivated by..." — reframing clause in multi-part paraphrase
+    /\b(this time( around)?|now)[,]? it'?s (motivated by|about|driven by|coming from|rooted in)\b/i,
+    // "Is that what I'm hearing?" — verification tag at end of multi-clause paraphrase
+    /\bis that (what i'?m hearing|right|what you'?re saying|what you mean|what i'?m getting)[\?]?/i,
+    // "It's less about X and more about Y" — reframing contrast (multi-part form)
+    /\bit'?s (less|not really) about .{0,50} (and |it'?s )?(more|really) about\b/i,
+    // Scoped "sounds like" — only fires when restating the respondent (not complimenting or generic)
+    // Requires: "it sounds like" or "so it sounds like" followed by interpretive content
+    /\b(so |okay |well )?it sounds like (you|that|this|what you|the|there'?s)\b/i,
+    // "So it's less about X and more about not-Y" — contrast reframe with negation in second clause
+    /\bso it'?s (less|not really|not just) about .{0,60} (and |it'?s )?more about (not |reconnecting|finding|letting|keeping|staying)\b/i,
+    // "You're saying that X" — direct attribution paraphrase
+    /\byou'?re saying that .{5,}/i,
+    // "What I'm hearing is X" — first-person synthesis without hedge (distinct from "kinda" variant)
+    /\bwhat i'?m hearing is (that |a sense|an? |the )\b/i,
   ] },
   { key:'followup',    label:'Follow-up Question',   color:'#bbf7d0', cat:'verbal',     patterns:[
     /\byou said (it was|that|he|she|they|it|this)\b/i,
@@ -852,6 +954,26 @@ const MOVE_DEFS = [
     /\bdid (a light|things) (shine|get better|improve|turn around)\b/i,/\bwould you say (your|he|she|they|it)\b/i,
     /\bdo you have any (other|more|final)? ?messages?\b/i,/\bwhat (would you|do you) (have to say|say) about that\b/i,
     /\bwhat could you build (upon|on) that\b/i,
+    // Analytical / hypothesis follow-up — "Is this trip an attempt to recapture X?"
+    // Binary framing of an interpretive hypothesis — distinct from emotional follow-ups
+    /\bis (this|that) .{0,60} (an attempt|a way|your way|an effort) to (recapture|find|rediscover|get back|reconnect with|escape)\b/i,
+    // "To what extent do you think X?" — evaluative degree question
+    /\bto what extent (do|did|does) you (think|believe|feel|consider)\b/i,
+    // Short naturalistic follow-ups — "What made that happen?", "Why do you think that was?"
+    /\bwhat made (that|it|this) (happen|change|shift|click|stick|work|fall apart)\b/i,
+    /\bwhy (do|did) you think that (was|happened|is|worked|didn'?t)?\b/i,
+    // "How did that feel?" / "What was that like for you?" — short direct emotional follow-up
+    /\bhow did (that|it|this) (feel|land|sit with you|hit you)\b/i,
+    /\bwhat was (that|it|this) (like|actually like) (for you)?\b/i,
+    // "What happened after that?" / "What came next?" — narrative continuation
+    /\bwhat (came|happened) (next|after|then|following that)\b/i,
+    // "Can you say more about that?" / "What do you mean by that?" — elaboration prompts
+    /\bcan you (say|tell me|share) more (about that|on that)?\b/i,
+    /\bwhat (do|did) you mean (by that|when you said|exactly)?\b/i,
+    // "Why did that matter to you?" — significance follow-up (short form)
+    /\bwhy did (that|it|this) (matter|stick|affect you|mean something|feel important)\b/i,
+    // "How did you deal with that?" — coping / response follow-up
+    /\bhow did you (deal with|respond to|handle|get through|process) (that|it|this)\b/i,
   ] },
   { key:'personal',    label:'Personal Connection',  color:'#fecaca', cat:'verbal',     patterns:[
     /\bfor me\b/i,/\bi also\b/i,/\bi was\b.*\btoo\b/i,/\bsimilar(ly)?\b/i,/\brelates to\b/i,/\bme too\b/i,
@@ -863,6 +985,19 @@ const MOVE_DEFS = [
     /\bi had (almost |nearly )?the opposite experience\b/i,
     /\bi (honestly )?would have been (freaking out|scared|nervous|lost|overwhelmed)\b/i,
     /\bi personally connect (that|with that|to that)\b/i,/\bif i were in your shoes\b/i,
+    // Casual / hedged connection — "I've kinda felt that too", "I can relate to that a little bit"
+    /\bi'?ve (kinda|kind of|sorta|sort of) (felt|experienced|had|been through) (that|something like that|that too)\b/i,
+    /\bi can (kinda|kind of|sorta|a little bit)? ?relate (to that)?\b/i,
+    // "That reminds me of something that happened to me" — softer variant
+    /\bthat (kind of |kinda |actually |sort of )?reminds me of something (that happened to me|i (went through|experienced|had))\b/i,
+    // "I had something kinda like that happen" — fragmented personal reference
+    /\bi had something (kinda|kind of|sorta|pretty|a lot)? ?like that (happen|too)?\b/i,
+    // "That's similar to something I went through" — comparative frame
+    /\bthat'?s (kinda|kind of|similar to|a lot like) something i (went through|experienced|dealt with|had)\b/i,
+    // "That actually happened to me too" — direct parallel
+    /\bthat (actually |literally |basically )?(happened to me|was me|was my experience) (too|as well)?\b/i,
+    // "I get that, I've experienced that" — compressed double affirmation
+    /\bi (get|understand|know) that[,.]? i'?ve (experienced|felt|been through|had) (that|something like that)\b/i,
   ] },
   { key:'emotional',   label:'Reflection / Naming',  color:'#e9d5ff', cat:'verbal',     patterns:[
     /\bhow did that (feel|make you)\b/i,/\bwhat was that like\b/i,
@@ -878,12 +1013,61 @@ const MOVE_DEFS = [
     /\bthat does sound like\b/i,
     /\bi (do think|think) it must have been (very |really |pretty )?(scary|hard|tough|uneasy|difficult)\b/i,
     /\bi honestly didn'?t know (like |that )?(so much|how much|what)\b/i,
+    // Contracted emotional naming — "That must've been stressful", "That must've been a lot"
+    /\bthat must'?ve been (really |pretty |so |kinda |kind of )?(hard|stressful|a lot|tough|scary|overwhelming|frustrating|much|painful|difficult|confusing|weird)\b/i,
+    // "That seems like a big moment" / "That feels like it was important"
+    /\bthat (seems|feels|sounds) like (a |it was )?(big|major|significant|important|real|huge|key|turning) (moment|point|deal|shift|thing)\b/i,
+    // "That sounds like it meant a lot to you"
+    /\bthat (sounds|seems|feels) like it (meant|means|mattered|was) (a lot|something|everything|much) (to you)?\b/i,
+    // "That seems like it changed things for you"
+    /\bthat (seems|sounds|feels) like it (changed|shifted|affected|altered|flipped) (things|everything|a lot|something) (for you)?\b/i,
+    // "That sounds like it was kinda overwhelming" — hedged naming
+    /\bthat (sounds|seems|feels) like it was (kinda|kind of|sorta|pretty|really|a little)? ?(a lot|overwhelming|heavy|intense|a big deal|rough)\b/i,
+    // "That must've been frustrating" — shorthand contracted form
+    /\bthat must'?ve (really |kinda |pretty )?been (frustrating|hard|awful|confusing|scary|lonely|isolating|a lot|rough|stressful)\b/i,
+    // Conceptual / non-emotional naming — "That sense of X still feels a little unclear"
+    // Names a state or position rather than an emotion — distinct from emotional labeling
+    /\bthat (sense of|feeling of|idea of|notion of|question of) .{0,40} (feels?|seems?|sounds?) (a (little|bit)|still|kind of|kinda|unclear|unresolved|uncertain|fuzzy|developing)\b/i,
+    // "You're at a kind of crossroads / turning point / inflection point"
+    /\byou'?re (at|in) (a kind of|a sort of|kind of|sort of|a|an)? ?(crossroads|turning point|inflection point|in-between|transition|liminal|threshold|moment of)\b/i,
+    // "It sounds like X becomes less of a threat / more of a Y"
+    // Conceptual reframing — naming how the respondent's relationship to something has shifted
+    /\bit (sounds|seems|feels) like .{0,50} (becomes?|is becoming|has become|turned into) (less of|more of|a kind of|something like) (a threat|an obstacle|a burden|a possibility|an opportunity|a tool|a way)\b/i,
+    // "That still feels a little unclear / unresolved / in progress"
+    /\bthat (still |kind of |kinda )?(feels?|seems?|sounds?) (a (little|bit) )?(unclear|unresolved|uncertain|fuzzy|in progress|up in the air|open|complicated)\b/i,
+    // "You're figuring out / working through / sitting with..."
+    /\byou'?re (still )?(figuring out|working through|sitting with|wrestling with|sorting out|navigating|processing) (what|how|where|who|that|this)\b/i,
+    // "So there's a kind of X in that" — abstract quality naming
+    // Narrow: requires abstract noun after "kind of" to avoid firing on filler
+    /\bso there'?s (a kind of|a sort of|a sense of|something like) (freedom|tension|uncertainty|possibility|pressure|purpose|irony|paradox|weight|release|clarity|ambiguity|grief|pride|relief) (in (that|this|it))?\b/i,
+    // "There's a kind of freedom / tension in that anonymity / uncertainty..."
+    /\bthere'?s (a kind of|a sort of|an? element of|a (real |certain )?) (freedom|tension|uncertainty|possibility|pressure|purpose|irony|paradox|weight|release|grief|pride|relief|ambiguity)\b/i,
+    // "It sounds like X becomes less of a threat and more of a space/possibility"
+    // Full contrast-reframe structure — names a conceptual shift, not an emotion
+    /\bit sounds like .{0,60} (becomes?|is becoming|has become) (less of|more of) (a threat|an obstacle|a burden|a source of|a space for|a (way|tool|path))\b/i,
+    // "That sense of service / purpose / clarity still feels a little unclear / developing"
+    // Precision: "sense of" + abstract noun + evaluative state word
+    /\bthat sense of (service|purpose|direction|meaning|identity|clarity|belonging|connection|freedom|adventure) (still |now |kind of |kinda )?(feels?|seems?|sounds?) (a (little|bit)|still|kinda|unclear|uncertain|developing|fuzzy|unresolved|shifting)\b/i,
+    // "You're at a crossroads / in a transition / between chapters"
+    // Precise: position + state noun (not generic "at a point where")
+    /\byou'?re (at|in|between) (a )?(crossroads|transition|turning point|inflection point|threshold|in-between( place)?|liminal (space|moment)|two (chapters|phases|versions)|a new chapter)\b/i,
   ] },
   { key:'encourager',  label:'Nudge of Encouragement', color:'#bfdbfe', cat:'verbal',   patterns:[
+    // Standalone minimal cues — must be the whole/near-whole turn (^ anchor prevents false positives)
     /^(yeah\.?|mm-?hmm\.?|uh-?huh\.?|right\.?|sure\.?|okay\.?|yep\.?|mmm\.?|got it\.?|i see\.?|shoot\.?)[.!?…]*$/i,
     /^(yeah|right|mm-?hmm|okay|uh-?huh)[\s,]+(yeah|right|mm-?hmm|okay|uh-?huh)[.!?…]*$/i,
+    // Cue + explicit invitation to continue — "Yeah, and then?", "Mm-hmm, what else?"
     /\b(yeah|okay|right|mm-?hmm|uh-?huh|i see)[,.]?\s+(keep going|go on|say more|tell me more|what else|and then|what happened next)\b/i,
+    // Explicit elaboration requests
     /\b(expand|elaborate|say more about|tell me more) (on |about )?that\b/i,/\bcould you (expand|elaborate)\b/i,
+    // "Go on..." / "Keep going" — standalone continuation nudges
+    /^(go on|keep going|continue|go ahead)[.!…,]*$/i,
+    // "Yeah, and then?" / "Okay, keep going" — cue + continuation (short form)
+    /^(yeah|okay|right|mm-?hmm)[,.]?\s+(and then|keep going|go on|what else|so then)[?.]?$/i,
+    // "Mm-hmm, what else?" — cue + open invitation
+    /^(mm-?hmm|uh-?huh)[,.]?\s+(what else|go on|say more|and\?)[?.]?$/i,
+    // "I see, go on" — acknowledgment + continuation
+    /^(i see|got it|right)[,.]?\s+(go on|keep going|say more|tell me more)[.!]?$/i,
   ] },
   { key:'summarizing', label:'Summarizing / Closing', color:'#fed7aa', cat:'verbal',    patterns:[
     /\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,
@@ -896,6 +1080,25 @@ const MOVE_DEFS = [
     /\bi'?ve gotten what i wanted\b/i,/\bthat'?ll be my interview\b/i,
     /\band before i (do go|go|wrap up|leave)\b/i,/\bfrom what you told me,? i could tell\b/i,
     /\bi'?m (sure|glad) (that was|my teacher)\b/i,
+    /\ba couple (of )?things i'?m hearing\b/i,/\bso (a couple|a few|some) things i'?m (hearing|taking away)\b/i,
+    /\bso what i'?m hearing (is|from you)\b/i,/\blet me make sure i'?m (understanding|hearing (you|that))\b/i,
+    /\bis that what i'?m hearing\b/i,/\bthat'?s a good (place|point|note|moment) to end\b/i,
+    /\bi appreciate you (taking the time|talking|sharing)\b/i,/\bthanks for (talking|sharing|sitting|being here)\b/i,
+    /\bso just to (make sure i understand|check)\b/i,
+    // "So overall it sounds like..." — synthesis opener
+    /\bso (overall|basically|in general|at the end of the day)[,]? it (sounds|seems|feels) like\b/i,
+    // "So basically what you're saying is..." — synthesis restatement
+    /\bso (basically|essentially|kind of|kinda)[,]? what you'?re (saying|getting at|trying to say) is\b/i,
+    // "To kind of sum it up..." — informal closing frame
+    /\bto (kind of|kinda|basically|sort of)? ?sum (it|this|that|everything) up\b/i,
+    // "So it seems like the main thing is..." — takeaway synthesis
+    /\bso it (seems|sounds|feels) like the (main|big|key|central|real) (thing|point|takeaway|idea) (here |is )?\b/i,
+    // "That's all the questions I had" — explicit closure
+    /\bthat'?s (all|about) (the |all )?(questions|things) (i (had|have|wanted to ask))\b/i,
+    // "Is there anything else you want to add?" — invitation to close
+    /\bis there (anything|something) (else )?(you (want|wanted|would like) to (add|say|share|mention))?\b/i,
+    // "I think that covers everything" — concluding frame
+    /\bi (think|feel like) that (covers|wraps up|gets at) (everything|it|what i wanted)\b/i,
   ] },
   { key:'onramp',      label:'On-Ramp',               color:'#a7f3d0', cat:'structural', patterns:[
     /\bi wanted to ask (about|you)\b/i,/\bone thing i'?ve been (thinking|wondering)\b/i,
@@ -921,6 +1124,43 @@ const MOVE_DEFS = [
     /\byou mentioned before that\b/i,/\bi want to go back to the part (where|when|about)\b/i,
     /\bgoing back to what you said\b/i,/\bi'?m (gonna|going to) circle back\b/i,
     /\bi'?ll circle back\b/i,/\bcircle back to (my|the|that|what)\b/i,
+    /\bi'?ve heard you (talk|say|mention|speak) (before |earlier )?(about|on)\b/i,
+    /\bwhat you said earlier\b/i,/\bi'?m (also )?thinking about what you said (earlier|before|about)\b/i,
+    /\byou said earlier (that|about|—)\b/i,/\bgoing back to what you (said|mentioned) earlier\b/i,
+    /\bthe (idea|thing|point) you (mentioned|raised|said) earlier\b/i,
+    /\byou (brought up|raised) earlier\b/i,
+    // Topic-label circling — "You mentioned earlier the idea of X" / "the concept of X"
+    // Softer than direct quote — references a named idea rather than exact words
+    /\byou (mentioned|talked about|brought up|said something about) earlier (the )?(idea|concept|notion|sense|feeling|question|point|thing) of\b/i,
+    // "I'm also thinking about what you said earlier" — associative return mid-turn
+    // "Also thinking about" signals a soft, embedded circle-back, not a hard redirect
+    /\bi'?m (also |just )?(thinking about|reflecting on|coming back to) what you (said|mentioned|talked about) earlier\b/i,
+    // "I've heard you talk before about X" — prior-context reference from outside the interview
+    /\bi'?ve heard you (talk|speak|say|mention) (before |previously )?(about|on|regarding) .{0,50}\b/i,
+    // "Wait, going back to what you said earlier..." — casual/interrupted return
+    /\bwait[,]? (going back|back) to (what you|something you) (said|mentioned|brought up) (earlier|before|a (minute|second|moment) ago)\b/i,
+    // "I want to go back to something you said" — intentional return
+    /\bi (want|wanted|need|needed) to (go back|come back|return) to something you (said|mentioned|brought up)\b/i,
+    // "You said before that..." — prior-statement reference
+    /\byou (said|mentioned|talked about) (that |this )?(before|earlier|a (minute|second|moment) ago)\b/i,
+    // "Can we go back to that for a second?" — casual request to revisit
+    /\bcan we (go back|return|circle back) to that (for a (second|moment|minute))?\b/i,
+    // "That thing you mentioned earlier..." — implicit referencing
+    /\bthat (thing|part|point|idea|bit) you (mentioned|said|brought up|talked about) (earlier|before|a (second|minute) ago)\b/i,
+    // "Hold on, I want to come back to that" — interrupted or spontaneous return
+    /\bhold on[,]? i (want|wanted|need) to (come back|go back|return) to (that|what you said|something)\b/i,
+    // "Back to what you were saying about..." — topic-labeled return
+    /\bback to (what you were saying|what you said|your (point|idea|comment)) (about|on|regarding)?\b/i,
+    // "You mentioned earlier the idea of hitting a reset button..."
+    // Precision: "earlier" + named concept — not just any "you mentioned"
+    /\byou (mentioned|talked about|brought up|said something about) earlier (the )?(idea|concept|notion|image|sense|metaphor|phrase|feeling|question|point) of .{3,}/i,
+    // "Thinking back to what you said before / earlier about X"
+    /\bthinking back to (what you (said|mentioned|described|talked about)|that (idea|thing|point|sense|moment)) (before|earlier|a (minute|second) ago)?\b/i,
+    // "Back to that idea of X" — topic-labeled soft return
+    /\bback to (that (idea|notion|sense|concept|feeling|question|point|image) of|what you (said|mentioned) about)\b/i,
+    // "That thing you said about X" — casual implicit reference
+    // Requires a content word after "about" to avoid over-triggering
+    /\bthat thing you (said|mentioned|talked about|brought up) about .{3,}/i,
   ] },
   { key:'bridge',      label:'Smooth Bridge',          color:'#d1fae5', cat:'structural', patterns:[
     /\bbut first\b/i,/\bbefore (we|i) (move|get|go) (on|to)\b/i,
@@ -929,6 +1169,40 @@ const MOVE_DEFS = [
     /\bthat actually makes me think of (another|a)\b/i,/\bspeaking of your\b/i,
     /\bthat kind of reminds me of (something|another)\b/i,/\bsince you brought that up\b/i,
     /\bthat leads (into|to) my next question\b/i,/\bthat (makes me think|got me thinking|reminded me)\b/i,
+    // "That reminds me of something I wanted to ask" — memory-triggered transition
+    /\bthat (kind of |actually |sort of )?reminds me of something (i (wanted|was meaning|was hoping) to ask|i'?ve been (wondering|thinking about))\b/i,
+    // "Since you brought that up..." — bridging from respondent's content
+    /\bsince (you (brought|mentioned|said|talked about)|we'?re (on|talking about)) (that|this|it)\b/i,
+    // "That leads into something else I was wondering" — sequential transition
+    /\bthat (leads|ties|connects) (into|to) (something|another (question|thing)) (i (was|'ve been) (wondering|thinking about|curious about))?\b/i,
+    // "That actually ties into another question" — explicit link
+    /\bthat (actually |kind of |sort of )?ties (into|to) (another|my next|a) (question|thing i wanted to ask)\b/i,
+    // "That makes me think of something else" — associative bridge
+    /\bthat (makes me think|got me thinking|actually made me think) (of |about )?(something else|another question|something i wanted to ask)\b/i,
+    // "Based on that..." — conclusion-to-question bridge
+    /\bbased on (that|what you (said|just said|mentioned|shared))[,]? (i (wanted|want|was wondering)|my next question)\b/i,
+    // "That kind of connects to..." — soft topical link
+    /\bthat (kind of|kinda|actually|sort of) connects (to|with) (something|another|what|a question)\b/i,
+    // "Let's go into that X you're seeking / describing / feeling"
+    // Imperative bridge into a topic surfaced by the respondent — invitation to expand
+    /\blet'?s (go into|dig into|talk about|explore|get into|look at) (that|this|your) .{0,50}(you'?re (seeking|describing|feeling|talking about|experiencing|going through))?\b/i,
+    // "I want to bring it back to X" — deliberate topical refocus mid-conversation
+    // Different from circling back: bridges to a new angle on the present, not a prior topic
+    /\bi (want|wanted) to (bring it back|come back|return) to (your|the|this|that|a) .{0,40}(moment|sense|question|feeling|point|idea)?\b/i,
+    // "So, thinking about X..." — participial opener that launches a bridge question
+    // Softer than a direct transition; uses present participle to embed the pivot
+    /\bso[,]? (thinking|speaking|talking|reflecting) about (the people|your|that|what|how|this|a)\b/i,
+    // "That brings me to X" — explicit sequential link
+    /\bthat (brings|leads) me (to|into) (my next question|something|a question|what i (wanted|was wondering))\b/i,
+    // "Following from that / connected to that / building on that" — logical bridge
+    /\b(following|building|connected) (from|on|to) (that|what you said|what you mentioned)[,]?\b/i,
+    // "I'm also thinking about what you said earlier — [topic]" as a bridge opener
+    // Precision: requires "also thinking about" + reference to prior speech act
+    // Note: this overlaps with circling — intentional, stacked detection is correct here
+    /\bi'?m also thinking about (what you said|that (idea|sense|thing|point|moment)|your (sense|point|idea)) (earlier|before|about|—)/i,
+    // "Thinking about [topic from prior answer]" — only fires when anchored to "that" / "what you" / "you mentioned"
+    // Prevents "I'm thinking about my next question" from triggering
+    /\bthinking about (that|what you (said|mentioned|described)|the (people|sense|idea|tension|feeling|question) you)\b/i,
   ] },
   { key:'pivot',       label:'Skilled Pivot',          color:'#fef3c7', cat:'structural', patterns:[
     /\bi want to shift\b/i,/\blet'?s (move|shift|turn) to\b/i,/\bchanging gears\b/i,/\bon a different note\b/i,
@@ -936,6 +1210,29 @@ const MOVE_DEFS = [
     /\bmoving away from that\b/i,/\bthis is (sort of |kind of )?unrelated,? but\b/i,
     /\b(okay,? )?changing directions\b/i,/\bon a completely different\b/i,
     /\blet me (change|switch|shift) (topics?|gears|directions?)\b/i,
+    // "Okay, switching topics a bit..." — casual labeled pivot
+    /\b(okay[,]? |so[,]? )?switching (topics?|gears?|directions?) (a (bit|little))?\b/i,
+    // "This is kind of a different question, but..." — hedged pivot
+    /\bthis is (kinda|kind of|sorta|sort of|a bit|a little) (a )?different (question|topic|direction)[,]? but\b/i,
+    // "Moving on a little bit..." — soft forward movement
+    /\bmoving (on|along|forward) (a (bit|little|moment))?\b/i,
+    // "Changing directions a bit..." — directional language
+    /\bchanging (directions?|course|track) (a (bit|little))?\b/i,
+    // "This might be unrelated, but..." — self-aware pivot
+    /\bthis (might|may|could) be (kind of |kinda |a little |somewhat )?unrelated[,]? but\b/i,
+    // "I want to ask something different now" — explicit intent
+    /\bi (want|wanted) to ask (something|a) (different|new|another) (now|question)?\b/i,
+    // "Let's shift gears for a second" — idiom variant
+    /\blet'?s (shift|change|switch) gears (for a (second|moment|minute))?\b/i,
+    // "So shifting a bit..." — transitional framing
+    /\bso[,]? (shifting|moving|switching) (a (bit|little)|to something|topics?|gears?)\b/i,
+    // Embedded gerund pivot — "So, shifting a bit—thinking about X..."
+    // Pivot is inline before the actual question; the dash or comma signals the shift
+    /\bso[,]? shifting (a (bit|little)|gears?|slightly|topics?)[,—\-] ?(thinking|speaking|wondering|looking|talking) about\b/i,
+    // "Pivoting slightly / a little bit" — explicit but soft pivot language
+    /\bpivoting (slightly|a (little|bit)|here|now|for a (second|moment))\b/i,
+    // "I want to shift gears and ask about X" — intentional labeled pivot
+    /\bi (want|wanted) to (shift|change) (gears?|directions?|topics?) (and (ask|talk|focus)|to)\b/i,
   ] },
   { key:'memory',      label:'Asking for Specific Memory', color:'#ddd6fe', cat:'verbal', patterns:[
     /\bis there a (moment|time|specific|particular)\b/i,/\bcan you think of a time\b/i,
@@ -946,7 +1243,156 @@ const MOVE_DEFS = [
     /\bwas there a (particular|specific) (day|moment|time|situation)\b/i,
     /\bcan you walk me through one example\b/i,/\bone (moment|example|time|situation) (that|where|when)\b/i,
     /\bdo you remember (exactly |clearly )?(when|the (moment|day|time))\b/i,
+    // "Can you give me an example?" — direct example request
+    /\bcan you (give me|think of|share) (a |an |one )?(specific |concrete |quick )?(example|instance|case)\b/i,
+    // "What's one moment you remember?" — open memory prompt
+    /\bwhat'?s (one|a) (moment|time|situation|example|instance) (you remember|that (stands out|comes to mind|you recall))\b/i,
+    // "Do you remember when that happened?" — narrative recall
+    /\bdo you remember (when|the (time|moment|day)) (that |it )?(happened|occurred|went down)?\b/i,
+    // "Can you walk me through that moment?" — process recall
+    /\bcan you walk me through (that|it|the|a) (moment|time|situation|example|experience)?\b/i,
+    // "Was there a time when that really stood out?" — salience-based recall
+    /\bwas there a (time|moment|point) when (that|it|this) (really |especially |particularly )?(stood out|hit you|mattered|felt different|clicked)\b/i,
+    // "What's one example of that?" — compressed example request
+    /\bwhat'?s (one|a (good|specific|quick))? ?example of (that|this|what you mean)\b/i,
+    // "Can you think of a specific time?" — direct recall prompt
+    /\bcan you (think of|remember|recall) a (specific |particular |real )?(time|moment|situation|example) (when|where|that)?\b/i,
   ] },
+];
+
+// ─────────────────────────────────────────────
+// EMERGING MOVE DEFINITIONS
+// These run as a second layer after standard MOVE_DEFS.
+// They detect partial / developing / informal versions of moves.
+// Confidence: 'medium' (weight 0.7) or 'low' (weight 0.4)
+// ─────────────────────────────────────────────
+
+const EMERGING_DEFS = [
+
+  // ── 1. Emerging Paraphrasis ──
+  // Loose restatement or gestural reference to what the respondent said.
+  // Requires *reference to the respondent's prior speech*, not just filler.
+  {
+    key: 'em_paraphrase',
+    label: 'Emerging Paraphrasis',
+    confidence: 'low',
+    parentKey: 'paraphrase',
+    patterns: [
+      /\bbecause you were (talking|saying|speaking) about (how|what|the way|that)\b/i,
+      /\blike you were saying (how|that|about|the way)\b/i,
+      /\bwhen you were saying (that|how|about)\b/i,
+      /\byou were talking about how you (felt|said|thought|described|mentioned|talked|spoke)\b/i,
+      /\byou said it was (like|kind of|sort of|basically|almost|pretty much)\b/i,
+      /\byou said that it was\b/i,
+      /\byou were saying it was (kind of|sort of|kinda|basically|like)\b/i,
+      /\bfrom what you were saying\b/i,
+      /\bthe way you talked about (it|that|this|your|him|her|them)\b/i,
+      /\bwhat you were saying (about|is|was)\b/i,
+      /\byou were just (saying|talking about|describing)\b/i,
+      /\byou (kind of|kinda|sort of|basically|just) (said|mentioned|talked about|described) (that|how|the way|your)\b/i,
+      /\bbecause now you'?re talking about (how|what|the way|that)\b/i,
+      /\bwhen you were (over there|back there|in that place|in that community|there)\b/i,
+      /\bjust because you were (approached|welcomed|included|treated|seen|known|liked)\b/i,
+    ],
+    // FALSE POSITIVE GUARDS applied in detectEmergingMoves()
+    // Do NOT fire if: only "like" alone, single word repeat, no respondent reference
+  },
+
+  // ── 2. Emerging Reflection / Naming ──
+  // Naming the respondent's tone, feeling, attitude, or significance in simple language.
+  // Should NOT fire on generic praise only ("that's nice", "cool", "that's good").
+  {
+    key: 'em_emotional',
+    label: 'Emerging Reflection',
+    confidence: 'low',
+    parentKey: 'emotional',
+    patterns: [
+      /\byou speak so highly of (it|that|them|him|her|this|your)\b/i,
+      /\byou seemed like you really (liked|loved|enjoyed|valued|cared about|wanted)\b/i,
+      /\bit sounds like you really (cared|loved|liked|valued|wanted|believed in|needed) (that|it|this|them)\b/i,
+      /\byou made it sound (really |so )?(important|significant|big|meaningful|serious|special)\b/i,
+      /\byou talked about it like it (mattered|was important|meant something|was everything)\b/i,
+      /\bthat seemed really (big|important|significant|hard|meaningful|huge|intense) (for you|to you)?\b/i,
+      /\bit sounded like that was (hard|difficult|tough|a lot|overwhelming|heavy|big)\b/i,
+      /\byou seem (proud|happy|excited|conflicted|uncertain|nervous|unsure|passionate) (of|about|when you talk)?\b/i,
+      /\byou (really )?light up (when you talk about|talking about|about)\b/i,
+      /\byou spoke so (beautifully|passionately|vividly|clearly|fondly) (about|of|on)?\b/i,
+      /\blike community[,.]? everything like that\b/i,  // catches "community, everything like that" pattern
+      /\bcommunity[,.]? everything like that\b/i,
+    ],
+    // FALSE POSITIVE GUARDS: block generic-praise-only turns
+    // "that's nice" / "that's good" / "cool" alone = not naming
+    exclusion: /^(that'?s (nice|good|great|cool|fine|awesome|interesting)|nice|cool|good|yeah nice|wow|that'?s beautiful)[.!,]?$/i,
+  },
+
+  // ── 3. Emerging Smooth Bridge ──
+  // Using a prior response to launch the next question, but without polished phrasing.
+  // ONLY fire when connected to a *new question* (text contains "?") or a clear topic shift.
+  {
+    key: 'em_bridge',
+    label: 'Emerging Bridge',
+    confidence: 'low',
+    parentKey: 'bridge',
+    patterns: [
+      /\bbecause you were (talking|saying|speaking) about\b/i,
+      /\bsince you (said|mentioned|talked about|were talking about)\b/i,
+      /\bbecause you (said|mentioned|told|described)\b/i,
+      /\bfrom what you (said|were saying|told me|described|talked about)\b/i,
+      /\bnow you'?re talking about\b/i,
+      /\bso now how (was|did|do|is|are|were)\b/i,
+      /\bso going from (that|there|what you said) to\b/i,
+      /\band now (how|what|why|when|where|do|did|is|was|can|could|would|are|were)\b/i,
+      /\bgoing from (that|there|over there) to (here|this|something)\b/i,
+    ],
+    // FALSE POSITIVE GUARDS applied in detectEmergingMoves():
+    // Only fire if the turn contains "?" — we want bridges that actually move to a question
+    requiresQuestion: true,
+  },
+
+  // ── 4. Contrast / Transition Frame ──
+  // Student attempts to compare before/after, there/here, old/new situation.
+  // Strengthens bridge and follow-up; separate label for visibility.
+  {
+    key: 'em_contrast',
+    label: 'Contrast Frame',
+    confidence: 'medium',
+    parentKey: null,
+    patterns: [
+      /\bgoing from (that|there|that community|that place|that school|that culture) to (here|this|something new|a new)\b/i,
+      /\bfrom over there to here\b/i,
+      /\bback there (compared to|versus|vs\.?) here\b/i,
+      /\bthere versus here\b/i,
+      /\bfrom that (community|culture|place|school|city|country|home|life) to (this|here|a new)\b/i,
+      /\bwhat was different (from|between) (that|this|your|that culture|that place) and (our|this|here|the)\b/i,
+      /\bcompared to how it is here\b/i,
+      /\bfrom .{3,30} to .{3,30} (culture|community|place|world|life|school)\b/i,
+      /\bwhat (changed|was different|shifted) (from|between|going from)\b/i,
+      /\bdifferent from the (culture|community|place|school|country|city|language)\b/i,
+    ],
+  },
+
+  // ── 5. Messy Follow-Up Question ──
+  // Repeated, fragmented, filler-heavy follow-ups that still clearly build on prior answer.
+  // Only fire if text contains "?" — this must be question-shaped.
+  {
+    key: 'em_followup',
+    label: 'Emerging Follow-Up',
+    confidence: 'low',
+    parentKey: 'followup',
+    patterns: [
+      /\bhow[,]? how (was|did|do|were|are|is)\b/i,
+      /\bhow was it (like|that|exactly|for you|when)\b/i,
+      /\bwhat things did you (find|notice|see|feel|experience)[,.]? (like[,.]?)? (different|similar|hard|strange|new|difficult|weird)\b/i,
+      /\bwhy do you (feel|think|believe) that[,.]? (like[,.]?)?\b/i,
+      /\bis it more because\b/i,
+      /\bdid you feel that\b/i,
+      /\bwas it because\b/i,
+      /\bhow did you[,.]? (like[,.]?)? (feel|handle|deal|manage|cope|approach)\b/i,
+      /\bwhat[,.]? (like[,.]?)? (was|did|do|would) (it|you|that|things)\b/i,
+    ],
+    requiresQuestion: true,
+  },
+
 ];
 
 // ─────────────────────────────────────────────
@@ -955,15 +1401,94 @@ const MOVE_DEFS = [
 
 function classifyQuestionLevel(q) {
   const t = q.toLowerCase();
-  const l3patterns = [/what did (that|this|it) (mean|teach|show|reveal)/,/why did (that|it|this) (stick|matter|affect)/,/how (has|have|did) (that|this|it) (changed|shaped|affected|influenced)/,/what would you (do differently|have done)/,/what do you wish/,/looking back/,/in retrospect/,/what does (that|this) say about/,/what are your thoughts going into/,/how does that make you feel (going|about|in)/,/what matters (most|to you)/,/what (have you|did you) (learned|taken away|realized)/,/why (didn'?t|did) you/,/what would you (carry|keep|change)/,/attributes you (think|should)/];
-  const l2patterns = [/walk me through/,/what happened (first|next|then|after)/,/who was (there|involved)/,/how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,/what (specifically|exactly)/,/tell me more about/,/what did (you|they|he|she) (do|say|decide)/,/how did (it|that|you|they) (work|start|end|begin|happen)/,/what (was|were) (the|your) (process|steps|plan|approach)/,/how has (it|that|being) .{0,30}\?/,/what (does|did) (your|the) (day|week|role|work|schedule)/,/do (we|you) have that many/];
-  const l1patterns = [/what do you do/,/tell me about (yourself|your)/,/how (are|is|was) (things|it|everything|school|work|life)/,/what('s| is) (your|a typical|life|it) like/,/what (brings|got) you (here|to|into)/,/can you (start by|begin by|introduce)/,/who are you/,/like what does your life look like/,/both in and outside/,/introducing yourself/];
+
+  // L3 — Unlock the Meaning
+  // Requires the respondent to INVENT, REFLECT, or SYNTHESIZE.
+  // The test: could they answer from memory alone, or do they have to construct something?
+  // Signals: hypotheticals, self-analysis, evaluation of meaning, prediction, advice-giving,
+  // imagining a different version of themselves or the world, assessing significance.
+  const l3patterns = [
+    // Hypotheticals / invention
+    /what would you (say|tell|do|give|recommend|advise) (to |if |someone)/,
+    /if you (were|could|had to) .{0,40}\?/,
+    /what would (that|it) (look|feel|mean) like (for you)?\?/,
+    /what do you (imagine|picture|envision|foresee)/,
+    /if you (could|had) (do it again|another chance|one thing|one piece)/,
+    // Self-analysis / psychological reflection
+    /what (do you think it is|is it) about (your|you|yourself)/,
+    /what (is it|do you think) about (your|you) (temperament|personality|character|nature|upbringing|mindset)/,
+    /why (do you think|is it that) you/,
+    /what (drives|pulls|draws|pushes|compels|motivates) you/,
+    /what does that (say|reveal|tell us) about (you|yourself)/,
+    /how (do you make sense of|do you understand|would you explain) (that|yourself|your)/,
+    // Evaluative / meaning-making
+    /to what extent/,
+    /how (significant|important|meaningful|valuable|consequential) (is|was|do you think)/,
+    /do you think (people|others|everyone|society|we) (are|is|should|could|would)/,
+    /how do you think .{0,50} (will|would|could|might) (help|change|affect|shape)/,
+    /what do you think (this|that|it|the|your) .{0,30} (means|says|reveals|shows)/,
+    // Confidence / forecasting / possibility
+    /how confident are you/,
+    /do you (think|believe|feel) you.{0,30} (will|would|can|could) (find|get|figure|make)/,
+    /do you (feel|think|believe) (like )?that'?s something you (still )?need/,
+    // Purpose / significance
+    /what did (that|this|it) (mean|teach|show|reveal)/,
+    /why did (that|it|this) (stick|matter|affect)/,
+    /how (has|have|did) (that|this|it) (changed|shaped|affected|influenced)/,
+    /what do you wish/,/looking back/,/in retrospect/,
+    /what matters (most|to you)/,
+    /what (have you|did you) (learned|taken away|realized)/,
+    /what would you (carry|keep|change|do differently|have done)/,
+    // Advice-giving (pure invention — they must construct an answer for someone else)
+    /what would you (say|tell) (to )?(someone|a person|anyone|people|them|him|her)/,
+    /what (advice|message|words) would you (give|offer|have)/,
+    /if (someone|a person|anyone) (came to you|asked you|felt|was)/,
+  ];
+
+  // L2 — Gather Details
+  // Requires recall of specifics: sequence, names, facts, examples, processes.
+  // The respondent reaches into memory for concrete information.
+  const l2patterns = [
+    /walk me through/,/what happened (first|next|then|after)/,/who was (there|involved)/,
+    /how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,
+    /what (specifically|exactly)/,/tell me more about/,
+    /what did (you|they|he|she) (do|say|decide)/,
+    /how did (it|that|you|they) (work|start|end|begin|happen)/,
+    /what (was|were) (the|your) (process|steps|plan|approach)/,
+    /how has (it|that|being) .{0,30}\?/,
+    /what (does|did) (your|the) (day|week|role|work|schedule)/,
+    /do (we|you) have that many/,
+    /was there a specific/,/do you remember (a time|when|the)/,
+    /can you (think of|point to|name) a/,
+    /what (kind of|sorts? of|types? of)/,/how (would you|do you) describe/,
+    /is (this|that|it) (an attempt|a way|related|connected)/,
+    /do you (feel|think|believe) (like )?that'?s (still )?unclear/,
+  ];
+
+  // L1 — Open the Door
+  // Safe, broad, tone-setting. Respondent can answer with general self-description.
+  const l1patterns = [
+    /what do you do/,/tell me about (yourself|your)/,
+    /how (are|is|was) (things|it|everything|school|work|life)/,
+    /what('s| is) (your|a typical|life|it) like/,
+    /what (brings|got) you (here|to|into)/,
+    /can you (start by|begin by|introduce)/,/who are you/,
+    /like what does your life look like/,/both in and outside/,/introducing yourself/,
+    /do you want to (talk about|introduce|share|tell me)/,
+  ];
+
   for (const p of l3patterns) if (p.test(t)) return 3;
   for (const p of l2patterns) if (p.test(t)) return 2;
   for (const p of l1patterns) if (p.test(t)) return 1;
+
+  // Fallback for questions not matched above
   if (t.includes('?')) {
-    if (/\b(why|what.*mean|how.*feel|what.*changed|reflect)\b/.test(t)) return 3;
-    if (/\b(how|when|where|who|which|describe|walk|specific|example)\b/.test(t)) return 2;
+    // Strong L3 signals in any question
+    if (/\b(to what extent|how confident|what would you say to|if you were (talking|speaking|giving advice)|why do you think you|what is it about (your|you))\b/.test(t)) return 3;
+    // Reflective framing signals L3
+    if (/\b(mean|matter|shaped|changed you|say about|significant|imagine|picture|envision|think it is about)\b/.test(t)) return 3;
+    // Specific recall signals L2
+    if (/\b(how|when|where|who|which|describe|walk|specific|example|what kind)\b/.test(t)) return 2;
     return 1;
   }
   return 0;
@@ -1062,13 +1587,28 @@ function countFillers(text) {
 function detectMoves(text, prevRespondentText, isInterviewer) {
   const moves = [];
   const lower = text.toLowerCase().trim();
+
+  // Exclusion: don't tag encourager when turn contains substantive content
   const encouragerExclusion = /\b(so my (next|last|first|other) question|moving on|changing (topics?|directions?|gears)|i (agree|think|believe|also|personally)|because|that reminds me|speaking of|anyway,? (so|let'?s)|now,? (let'?s|i want))\b/i;
+
+  // Exclusion: "that makes sense" alone should not fire as bridge or reflection
+  // Only suppress if it's a very short turn (under ~6 words) with no substantive follow-on
+  const thatMakesSenseOnly = /^(that makes sense|that makes a lot of sense|okay that makes sense)[.!,]?$/i;
+
+  // Exclusion: "sounds like" in generic positive reactions (not paraphrase/reflection)
+  // "That sounds like a good idea / plan / great / fun / cool"
+  const genericSoundsLike = /\bit sounds like (a good|a great|a fun|an? (amazing|interesting|cool|solid|smart|great|good|excellent))\b/i;
 
   for (const def of MOVE_DEFS) {
     if (def.key === 'followup') continue;
     for (const pat of def.patterns) {
       if (pat.test(lower)) {
+        // Encourager exclusion
         if (def.key === 'encourager' && encouragerExclusion.test(lower)) break;
+        // Bridge exclusion: "that makes sense" alone is not a bridge
+        if (def.key === 'bridge' && thatMakesSenseOnly.test(lower)) break;
+        // Emotional/reflection exclusion: generic "sounds like a good idea" is not naming
+        if (def.key === 'emotional' && genericSoundsLike.test(lower)) break;
         moves.push(def.key);
         break;
       }
@@ -1097,6 +1637,70 @@ function detectMoves(text, prevRespondentText, isInterviewer) {
   }
 
   return [...new Set(moves)];
+}
+
+// ─────────────────────────────────────────────
+// DETECT EMERGING MOVES IN A TURN
+// Returns array of { key, label, confidence, matchedPhrase }
+// ─────────────────────────────────────────────
+
+function detectEmergingMoves(text, highConfidenceMoveKeys) {
+  const results = [];
+  const lower = text.toLowerCase().trim();
+  const hasQuestion = text.includes('?');
+
+  // Generic praise exclusion — short turn that only says something nice
+  const genericPraise = /^(that'?s (nice|good|great|cool|fine|awesome|interesting|beautiful)|nice|cool|good|yeah nice|wow|awesome)[.!,]?\s*$/i;
+
+  // Guard: don't fire on very short turns (under 6 words) with no reference content
+  const wordCount = lower.split(/\s+/).filter(w => w.length > 0).length;
+  if (wordCount < 4) return results;
+
+  for (const def of EMERGING_DEFS) {
+    // Skip if the high-confidence engine already detected the parent move
+    // (no need to double-tag with emerging version)
+    if (def.parentKey && highConfidenceMoveKeys.includes(def.parentKey)) continue;
+
+    // requiresQuestion guard — fire if has "?" OR the turn is clearly question-shaped
+    // (starts with "what", "why", "how", "do", "did", "is", "was", "when", "where")
+    const looksLikeQuestion = /^(what|why|how|do|did|is|was|when|where|and then what|and what)\b/i.test(lower);
+    if (def.requiresQuestion && !hasQuestion && !looksLikeQuestion) continue;
+
+    // Emerging bridge: also require that the phrase is part of a longer turn
+    // (not a standalone "because you said..." without anything following)
+    if (def.key === 'em_bridge' && wordCount < 8) continue;
+
+    // Per-definition exclusion check
+    if (def.exclusion && def.exclusion.test(lower)) continue;
+
+    // Emerging reflection: block generic praise
+    if (def.key === 'em_emotional' && genericPraise.test(lower)) continue;
+
+    // Emerging paraphrasis: require that there's actual content after the trigger phrase
+    // (not just "like you were saying..." with nothing after)
+    if (def.key === 'em_paraphrase' && wordCount < 7) continue;
+
+    for (const pat of def.patterns) {
+      const m = lower.match(pat);
+      if (m) {
+        results.push({
+          key: def.key,
+          label: def.label,
+          confidence: def.confidence,
+          matchedPhrase: m[0],
+        });
+        break; // one match per def is enough
+      }
+    }
+  }
+
+  // Deduplicate by key
+  const seen = new Set();
+  return results.filter(r => {
+    if (seen.has(r.key)) return false;
+    seen.add(r.key);
+    return true;
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -1243,7 +1847,7 @@ function escapeHtml(str) {
  * Build annotated HTML for an interviewer turn.
  * All pattern matching runs on raw plain text. HTML is injected once.
  */
-function buildInterviewerHtml(rawText, moveKeys, level, isFollowup) {
+function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMoves) {
   // ── 1. Collect filler spans on raw text ──
   const fillerRanges = [];
   for (const f of FILLERS) {
@@ -1352,6 +1956,14 @@ function buildInterviewerHtml(rawText, moveKeys, level, isFollowup) {
     html += ` <span class="tag" style="background:#e8e8e8;color:#555;border:1px solid #ccc;font-size:7pt;opacity:0.8;">⊕ ${stackLabels}</span>`;
   }
 
+  // Emerging move tags — rendered inline after the turn text
+  if (emergingMoves && emergingMoves.length > 0) {
+    for (const e of emergingMoves) {
+      const confLabel = e.confidence === 'medium' ? '~' : '≈';
+      html += ` <span class="tag tag-emerging">${confLabel} ${e.label}</span>`;
+    }
+  }
+
   return html;
 }
 
@@ -1418,9 +2030,16 @@ function analyze() {
   // ── Moves + levels ──
   const moveTotals = {};
   MOVE_DEFS.forEach(d => moveTotals[d.key] = 0);
+  // Emerging move totals — keyed by emerging def key, value is fractional count
+  const emergingTotals = {};
+  EMERGING_DEFS.forEach(d => emergingTotals[d.key] = 0);
+  let emergingMoveScore = 0; // fractional score contribution from emerging moves
+  let emergingStructuralCount = 0; // count of turns with ≥1 emerging structural move
+
   const questionLevels = [];
   let prevRespondentText = '';
   const turnMoves = [];
+  const turnEmergingMoves = []; // per-turn emerging move results
   const turnLevels = [];
   const turnDrifts = [];
   const missedOpps = [];
@@ -1438,6 +2057,21 @@ function analyze() {
       const moves = detectMoves(turn.text, prevRespondentText, true);
       moves.forEach(m => moveTotals[m] = (moveTotals[m]||0)+1);
       turnMoves.push(moves);
+
+      // Detect emerging moves — only on turns where respondent text exists (they're building on something)
+      const emerging = prevRespondentText
+        ? detectEmergingMoves(turn.text, moves)
+        : [];
+      // Track structural emerging moves (em_bridge, em_contrast) separately for display
+      let hasEmergingStructural = false;
+      emerging.forEach(e => {
+        emergingTotals[e.key] = (emergingTotals[e.key] || 0) + 1;
+        const weight = e.confidence === 'medium' ? 0.7 : 0.4;
+        emergingMoveScore += weight;
+        if (e.key === 'em_bridge' || e.key === 'em_contrast') hasEmergingStructural = true;
+      });
+      if (hasEmergingStructural) emergingStructuralCount++;
+      turnEmergingMoves.push(emerging);
 
       const level = classifyQuestionLevel(turn.text);
       turnLevels.push(level);
@@ -1475,10 +2109,12 @@ function analyze() {
       const drift = prevQuestion ? detectDrift(turn.text, prevQuestion.text) : null;
       turnDrifts.push(drift);
       turnMoves.push([]);
+      turnEmergingMoves.push([]);
       turnLevels.push(0);
       prevRespondentText = turn.text;
     } else {
       turnMoves.push([]);
+      turnEmergingMoves.push([]);
       turnLevels.push(0);
       turnDrifts.push(null);
     }
@@ -1543,17 +2179,38 @@ function analyze() {
   const verbHtml  = verbalDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
   const structHtml= structDefs.map(def => { const cnt = moveTotals[def.key]||0; if(!cnt)return''; return `<div><span class="tag tag-${def.key}">${def.label}</span>&nbsp;×${cnt}</div>`; }).join('');
   const totalMoves = Object.values(moveTotals).reduce((a,b)=>a+b,0);
+  // Structural moves "none detected" note — append emerging count if present
+  const structNoneHtml = !structHtml
+    ? `<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected${emergingStructuralCount > 0 ? ` <span class="tag tag-emerging" style="font-size:7.5pt;margin-left:6px;">≈ ${emergingStructuralCount} emerging</span>` : ''}</div>`
+    : structHtml + (emergingStructuralCount > 0
+        ? `<div style="margin-top:4px;font-size:8.5pt;color:#9a7a20;font-style:italic;font-family:Arial,sans-serif;">+ ${emergingStructuralCount} emerging structural moment${emergingStructuralCount > 1 ? 's' : ''} detected</div>`
+        : '');
+
   document.getElementById('moveSummaryGrid').innerHTML = `
     <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:6px;grid-column:1/-1;">Verbal Moves</div>
     ${verbHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
     <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-top:10px;margin-bottom:6px;grid-column:1/-1;">Structural Moves</div>
-    ${structHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
+    ${structNoneHtml}
   `;
   const moveStanding = totalMoves >= 15 ? { label: 'Exceeds Standard', color: '#2a7a40', mark: '✓' }
     : totalMoves >= 12 ? { label: 'Meets Standard',    color: '#2a5fa0', mark: '✓' }
     : totalMoves >=  7 ? { label: 'Approaching Standard', color: '#b07a00', mark: '◐' }
     :                    { label: 'Needs Work',         color: '#b02020', mark: '✗' };
-  document.getElementById('moveSummaryTotal').innerHTML = `<strong>Total annotated moments: ${totalMoves}</strong> &nbsp;·&nbsp; <span style="color:${moveStanding.color};font-weight:bold;">${moveStanding.mark} ${moveStanding.label}</span> &nbsp;<span style="color:#bbb;font-size:7.5pt;">(0–6 Needs Work · 7–9 Approaching · 10–11 Meets · 12–14 Exceeds)</span>`;
+
+  // Emerging move summary
+  const totalEmergingInstances = Object.values(emergingTotals).reduce((a,b)=>a+b,0);
+  const emergingSummaryHtml = totalEmergingInstances > 0 ? (() => {
+    const parts = EMERGING_DEFS
+      .filter(d => emergingTotals[d.key] > 0)
+      .map(d => `<span class="tag tag-emerging" style="font-size:8pt;">${d.confidence === 'medium' ? '~' : '≈'} ${d.label}</span>&nbsp;×${emergingTotals[d.key]}`);
+    return `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #c4a540;">
+      <span style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#9a7a20;margin-right:8px;">Emerging Moves</span>
+      ${parts.join('&ensp;')}
+      <span style="color:#bbb;font-size:7.5pt;margin-left:8px;">(developing — counted at reduced weight)</span>
+    </div>`;
+  })() : '';
+
+  document.getElementById('moveSummaryTotal').innerHTML = `<strong>Total annotated moments: ${totalMoves}</strong> &nbsp;·&nbsp; <span style="color:${moveStanding.color};font-weight:bold;">${moveStanding.mark} ${moveStanding.label}</span> &nbsp;<span style="color:#bbb;font-size:7.5pt;">(0–6 Needs Work · 7–9 Approaching · 10–11 Meets · 12–14 Exceeds)</span>${emergingSummaryHtml}`;
 
   // QUESTION LEVELS
   const l1 = questionLevels.filter(l=>l===1).length;
@@ -1561,16 +2218,49 @@ function analyze() {
   const l3 = questionLevels.filter(l=>l===3).length;
   const maxL = Math.max(l1,l2,l3,1);
   let arcNote = '', arcClass = '';
-  if (l3 >= 1 && l2 >= 1 && l1 >= 1) {
-    arcNote = '✓ Good progression — surface → detail → depth represented'; arcClass = 'arc-good';
-  } else if (l3 === 0 && l2 >= 1) {
-    arcNote = '⚠ Reached detail but never pushed to depth (Level 3)'; arcClass = 'arc-warn';
+  const totalLeveled = l1 + l2 + l3;
+  const l3pct = totalLeveled > 0 ? l3 / totalLeveled : 0;
+  const l2pct = totalLeveled > 0 ? l2 / totalLeveled : 0;
+  const l1pct = totalLeveled > 0 ? l1 / totalLeveled : 0;
+
+  // Also check if depth questions came later (arc direction)
+  const firstHalf  = questionLevels.slice(0, Math.ceil(questionLevels.length / 2));
+  const secondHalf = questionLevels.slice(Math.ceil(questionLevels.length / 2));
+  const avgFirst   = firstHalf.length  ? firstHalf.reduce((a,b)=>a+b,0)/firstHalf.length   : 0;
+  const avgSecond  = secondHalf.length ? secondHalf.reduce((a,b)=>a+b,0)/secondHalf.length : 0;
+  const builtArc   = avgSecond > avgFirst + 0.3;
+
+  if (totalLeveled === 0) {
+    arcNote = '— No questions classified yet'; arcClass = 'arc-warn';
   } else if (l3 === 0 && l2 === 0) {
-    arcNote = '✗ Questions stayed at the surface — no progression to detail or depth'; arcClass = 'arc-bad';
-  } else if (l1 === 0) {
-    arcNote = '⚠ Skipped surface level — consider opening more gently'; arcClass = 'arc-warn';
+    arcNote = `✗ All ${l1} questions stayed at Level 1 — no movement toward detail or depth`; arcClass = 'arc-bad';
+  } else if (l3 === 0 && l2 >= 1) {
+    if (l2pct >= 0.5) {
+      arcNote = `⚠ Solid detail-level work (${l2} L2 questions) but never pushed to depth — one good "why" could unlock Level 3`; arcClass = 'arc-warn';
+    } else {
+      arcNote = `⚠ Mostly surface questions with some L2 — reached detail but didn't stay there`; arcClass = 'arc-warn';
+    }
+  } else if (l3 >= 1 && l3pct < 0.15) {
+    // Has L3 but it's isolated — one question doesn't make a pattern
+    arcNote = `⚠ One Level 3 moment (${l3} of ${totalLeveled} questions) — a glimpse of depth, but the interview mostly stayed shallow`; arcClass = 'arc-warn';
+  } else if (l3pct >= 0.15 && l3pct < 0.35 && l2pct >= 0.2) {
+    if (builtArc) {
+      arcNote = `✓ Good progression — interview built toward depth, with L3 questions landing in the second half`; arcClass = 'arc-good';
+    } else {
+      arcNote = `~ Depth questions present but scattered — L3 and L2 didn't form a clear arc from surface to meaning`; arcClass = 'arc-warn';
+    }
+  } else if (l3pct >= 0.35) {
+    if (l1 === 0) {
+      arcNote = `⚠ Heavy on depth — ${l3} L3 questions, but no warm-up. Consider opening more gently before diving in`; arcClass = 'arc-warn';
+    } else if (builtArc) {
+      arcNote = `✓ Strong arc — interview moved from surface to depth with intention. ${l3} L3 questions in the second half`; arcClass = 'arc-good';
+    } else {
+      arcNote = `✓ Depth-heavy interview — ${l3} Level 3 questions, though they weren't concentrated at the end`; arcClass = 'arc-good';
+    }
+  } else if (l1 === 0 && l3 >= 1) {
+    arcNote = `⚠ Skipped surface level entirely — try one or two grounding questions before pushing to depth`; arcClass = 'arc-warn';
   } else {
-    arcNote = 'Mixed progression'; arcClass = 'arc-warn';
+    arcNote = `~ Mixed — surface, detail, and depth all appeared but without a clear pattern`; arcClass = 'arc-warn';
   }
   document.getElementById('levelDisplay').innerHTML = `
     <div class="level-track">
@@ -1603,28 +2293,85 @@ function analyze() {
   `;
 
   // SCORES
+  const moveTypes = Object.values(moveTotals).filter(v => v > 0).length;
+  const l3count = questionLevels.filter(l => l === 3).length;
+  const l2count = questionLevels.filter(l => l === 2).length;
+  const l1count = questionLevels.filter(l => l === 1).length;
+  const totalQ  = questionLevels.length;
+  const rPct100 = Math.round((scores.rWords / Math.max(scores.totalWords, 1)) * 100);
+  const iPct100 = 100 - rPct100;
+  const fillerRatePct = scores.iWords > 0 ? Math.round((fillerTotals.interviewer / scores.iWords) * 100) : 0;
+
+  function scoreFeedback(metric, score) {
+    if (metric === 'listening') {
+      if (score === 5) return { cls:'fb-good', text:`You used ${moveTypes} different move types — a full toolkit. Strong listener.` };
+      if (score === 4) return { cls:'fb-good', text:`You used ${moveTypes} move types. Solid range — one more variety and you're maxed out.` };
+      if (score === 3) return { cls:'fb-ok',   text:`You used ${moveTypes} move types. You have a go-to or two, but the range is narrow.` };
+      if (score === 2) return { cls:'fb-low',  text:`Only ${moveTypes} move type detected. Try mixing encouragers, paraphrases, and follow-ups.` };
+                       return { cls:'fb-low',  text:`Just 1 move type used throughout. Vary your tools — one move won't carry a whole interview.` };
+    }
+    if (metric === 'quality') {
+      if (score === 5) return { cls:'fb-good', text:`Strong question depth: ${l3count} L3 and ${l2count} L2 out of ${totalQ} total. You went somewhere real.` };
+      if (score === 4) return { cls:'fb-good', text:`Good mix of question levels. ${l3count > 0 ? `${l3count} L3 question${l3count > 1 ? 's' : ''} landed.` : 'Try pushing one question to L3 next time.'}` };
+      if (score === 3) return { cls:'fb-ok',   text:`Mostly L1–L2 questions (${l1count} L1, ${l2count} L2, ${l3count} L3). Getting there — push for more depth.` };
+      if (score === 2) return { cls:'fb-low',  text:`Heavy on L1 questions (${l1count} of ${totalQ}). Surface-level questions get surface-level answers.` };
+                       return { cls:'fb-low',  text:`Almost entirely L1 (${l1count} of ${totalQ} questions). Start asking why, not just what.` };
+    }
+    if (metric === 'arc') {
+      if (score === 5) return { cls:'fb-good', text:`Your questions built well — question depth increased meaningfully from start to finish.` };
+      if (score === 4) return { cls:'fb-good', text:`Slight upward progression. Your interview generally moved toward more depth as it went on.` };
+      if (score === 3) return { cls:'fb-ok',   text:`Question depth stayed about the same throughout. Try warming up with L1s and pushing toward L2–L3.` };
+      if (score === 2) return { cls:'fb-low',  text:`Your deepest questions came early and the interview got shallower. Save your best questions for later.` };
+                       return { cls:'fb-low',  text:`No clear arc detected — questions were too few to score a pattern.` };
+    }
+    if (metric === 'balance') {
+      if (score === 5) return { cls:'fb-good', text:`${respondent} spoke ${rPct100}% of the time — right in the sweet spot. You let them drive.` };
+      if (score === 4) return { cls:'fb-good', text:`${respondent} spoke ${rPct100}% of the time — close to ideal. Minor adjustments would get you there.` };
+      if (score === 3) return { cls:'fb-ok',   text:`${respondent} spoke ${rPct100}% of the time. ${rPct100 < 55 ? 'You talked a bit much — ask and step back.' : 'Respondent may have gone off-track — redirect more often.'}` };
+      if (score === 2) return { cls:'fb-low',  text:`${respondent} spoke ${rPct100}%, you spoke ${iPct100}%. ${rPct100 < 45 ? 'You dominated this conversation.' : 'The respondent ran away with it — practice gentle redirection.'}` };
+                       return { cls:'fb-low',  text:`Talk time was badly off-balance (${respondent}: ${rPct100}% / you: ${iPct100}%). This needs work.` };
+    }
+    if (metric === 'filler') {
+      if (score === 5) return { cls:'fb-good', text:`Filler rate: ${fillerRatePct}% — clean and controlled. Your pauses were working for you.` };
+      if (score === 4) return { cls:'fb-good', text:`Filler rate: ${fillerRatePct}% — mostly clean. A few slipped in but nothing distracting.` };
+      if (score === 3) return { cls:'fb-ok',   text:`Filler rate: ${fillerRatePct}% — noticeable. Slow down before asking your next question.` };
+      if (score === 2) return { cls:'fb-low',  text:`Filler rate: ${fillerRatePct}% — high. Filler words undercut your authority in the room. Pause instead.` };
+                       return { cls:'fb-low',  text:`Filler rate: ${fillerRatePct}% — very high. Silence is better than "um." Practice the pause.` };
+    }
+  }
+
   const scoreItems = [
-    { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used. More variety = higher score.' },
-    { label:'Question Quality', score: scores.qScore,         tip: 'Weighted by level. L2 counts once, L3 counts 1.5×.' },
-    { label:'Arc / Structure',  score: scores.arcScore,       tip: 'Did question levels build? Compares avg level in first vs. last third.' },
-    { label:'Talk Balance',     score: scores.balanceScore,   tip: 'Ideal: respondent speaks 55–80%. Score drops if you dominate.' },
-    { label:'Filler Control',   score: scores.fillerScore,    tip: 'Interviewer filler rate only. Under 5% = 5/5. Lose a point every 5%.' },
+    { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used. More variety = higher score.',   metric:'listening' },
+    { label:'Question Quality', score: scores.qScore,         tip: 'Weighted by level. L2 counts once, L3 counts 1.5×.',                   metric:'quality'   },
+    { label:'Arc / Structure',  score: scores.arcScore,       tip: 'Did question levels build? Compares avg level in first vs. last third.', metric:'arc'      },
+    { label:'Talk Balance',     score: scores.balanceScore,   tip: 'Ideal: respondent speaks 55–80%. Score drops if you dominate.',          metric:'balance'  },
+    { label:'Filler Control',   score: scores.fillerScore,    tip: 'Interviewer filler rate only. Under 5% = 5/5. Lose a point every 5%.',  metric:'filler'   },
   ];
-  const scoreHtml = scoreItems.map(s => `
-    <div class="score-bar-wrap">
-      <div class="score-row">
-        <span class="score-left">${s.label}<span class="score-info">?<span class="score-tooltip">${s.tip}</span></span></span>
-        <span>${s.score}/5</span>
+
+  const scoreGridHtml = scoreItems.map(s => {
+    const fb = scoreFeedback(s.metric, s.score);
+    return `
+      <div class="score-metric-col">
+        <div class="score-bar-wrap" style="margin-top:0;">
+          <div class="score-row">
+            <span class="score-left" style="font-weight:bold;color:#555;">${s.label}<span class="score-info">?<span class="score-tooltip">${s.tip}</span></span></span>
+            <span style="font-size:10pt;font-weight:bold;color:#2a2a1e;">${s.score}/5</span>
+          </div>
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${s.score/5*100}%;height:8px;border-radius:99px;"></div></div>
+        </div>
+        <div class="score-metric-feedback ${fb.cls}">${fb.text}</div>
       </div>
-      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${s.score/5*100}%"></div></div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+
   document.getElementById('scoreDisplay').innerHTML = `
-    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:18px;">
       <div class="score-big">${scores.overall}<span style="font-size:18pt;color:#aaa;">/25</span></div>
       <div class="score-label">Overall Score</div>
     </div>
-    ${scoreHtml}
+    <div class="score-full-grid">
+      ${scoreGridHtml}
+    </div>
   `;
 
   // VOICE ANALYSIS
@@ -1650,10 +2397,6 @@ function analyze() {
           <div class="vk">Idioms &amp; Colloquialisms ${tooltip('Expressions whose meaning can\'t be taken literally. Reveal voice and personality.')}</div>
           <div class="vv">${v.foundIdioms.length > 0 ? `${v.foundIdioms.length} ${idiomCountWord} found — ` : ''}${idiomLine}</div>
         </div>
-        <div class="voice-item">
-          <div class="vk">Tone ${tooltip('Detected by dry wit markers: "right?", "of course", "naturally", etc. Two or more suggest a wry register.')}</div>
-          <div class="vv">${v.toneNote}</div>
-        </div>
         ${isInt
           ? `<div class="voice-item"><div class="vk">Question Rate ${tooltip('% of interviewer turns containing a question mark.')}</div><div class="vv">${v.questionRatio}% of turns asked a question</div></div>`
           : `<div class="voice-item"><div class="vk">Response Length ${tooltip('Avg words per respondent turn. Brief <30 · Moderate 30–70 · Developed 70–120 · Very Extended 120+.')}</div><div class="vv">${v.responseLength} <span style="color:#bbb;font-size:8pt;">(~${v.avgWordsPerTurn} words/turn)</span></div></div>`
@@ -1677,6 +2420,13 @@ function analyze() {
   `;
 
   // MISSED OPPORTUNITIES
+  // Always flag when no L3 questions were asked — this is a structural gap regardless of other scores
+  const l3countForMissed = questionLevels.filter(l => l === 3).length;
+  const lowFollowup = (moveTotals.followup || 0) <= 1;
+  if (l3countForMissed === 0 && totalQ > 0) {
+    missedOpps.push({ idx: -1, text: `No Level 3 questions asked. Try one question that pushes toward meaning — "Why does this matter to you?", "How did that change you?", or "What do you wish you'd known then?" These are the questions that make an interview memorable.` });
+  }
+
   if (missedOpps.length === 0) {
     document.getElementById('missedDisplay').innerHTML = `<p class="no-issues">No major missed opportunities flagged — nice work.</p>`;
   } else {
@@ -1723,6 +2473,7 @@ function analyze() {
       <h3 style="margin-top:12px;">Other</h3>
       <div class="legend-item"><div class="legend-swatch" style="background:#f9f200;border:1px solid #d4c800;border-radius:2px;"></div><div class="legend-text"><strong>Verbal Filler</strong><span>um, uh, like, you know…</span></div></div>
       <div class="legend-item"><div class="legend-swatch hl-drift"></div><div class="legend-text"><strong>Tangential Drift</strong><span>Response strays from the question</span></div></div>
+      <div class="legend-item"><div class="legend-swatch hl-emerging"></div><div class="legend-text"><strong>≈ Emerging Move</strong><span>Attempting the move — developing form, counted at reduced weight</span></div></div>
     </div>
   `;
 
@@ -1740,7 +2491,7 @@ function analyze() {
     if (isInt) {
       const lv = turnLevels[i];
       const isFollowup = turnMoves[i] && turnMoves[i].includes('followup');
-      renderedText = buildInterviewerHtml(turn.text, turnMoves[i], lv, isFollowup);
+      renderedText = buildInterviewerHtml(turn.text, turnMoves[i], lv, isFollowup, turnEmergingMoves[i]);
     } else if (isRes) {
       renderedText = buildRespondentHtml(turn.text, !!turnDrifts[i]);
     } else {
@@ -1758,7 +2509,7 @@ function analyze() {
 
   // FIX #4: pass fillerTotals explicitly to buildCommentary
   // buildCommentary no longer closes over the outer rFillers variable
-  function buildCommentary(voice, name, isInt, moveTotals, scores, questionLevels, missedOpps, drifts, fillerTotals) {
+  function buildCommentary(voice, name, isInt, moveTotals, scores, questionLevels, missedOpps, drifts, fillerTotals, emergingTotals) {
     const displayName = name.charAt(0) + name.slice(1).toLowerCase();
     const strengths = [], growth = [], flags = [];
 
@@ -1781,12 +2532,45 @@ function analyze() {
       if (voice && voice.dictionLevel > 18) strengths.push('Elevated diction — responses have range and sophistication.');
       if (voice && voice.avgSentLen > 15) strengths.push('Developed, well-elaborated answers — you gave the interviewer material to work with.');
       if (drifts.length === 0) strengths.push('Responses stayed focused on the questions asked.');
-      if (voice && voice.toneNote.includes('Wry')) strengths.push('Distinctive voice — dry wit and irony are present.');
+      if (voice && voice.foundIdioms.length >= 3) strengths.push(`Distinctive voice — idiomatic language gives answers personality ("${voice.foundIdioms[0]}", "${voice.foundIdioms[1]}")`);
 
       if (drifts.length >= 2) growth.push('Answers drifted in multiple turns — practice ending your response where the question asked you to end.');
       if (voice && voice.avgSentLen > 30) growth.push('Some answers ran very long — try landing your key point, then pausing.');
       // FIX #4: use passed-in fillerTotals instead of closing over outer variable
       if (fillerTotals.respondent > 10) growth.push('Filler words suggest processing out loud — it\'s natural, but practice pausing silently instead.');
+    }
+
+    // Build emerging move callout for interviewers
+    let emergingCallout = '';
+    if (isInt && emergingTotals) {
+      const totalEmerging = Object.values(emergingTotals).reduce((a,b)=>a+b,0);
+      if (totalEmerging > 0) {
+        // Generate specific coaching language based on which emerging moves fired
+        const coachingLines = [];
+        if ((emergingTotals.em_paraphrase||0) > 0) {
+          coachingLines.push('You gestured toward paraphrasing — phrases like "because you were talking about..." or "from what you were saying..." are the right instinct. Sharpen those into a full restatement before asking the next question. Try: "So what I\'m hearing is..."');
+        }
+        if ((emergingTotals.em_emotional||0) > 0) {
+          coachingLines.push('You named tone and attitude — "you speak so highly of it" or "you seemed really passionate" are solid observations. To make these land as full Reflection/Naming moves, tie the feeling to what it means: "It sounds like that community was more than just a place — it was a sense of home."');
+        }
+        if ((emergingTotals.em_bridge||0) > 0) {
+          coachingLines.push('You used the previous answer to launch your next question — that\'s the core of a Smooth Bridge. To polish it, name the connection explicitly: "Since you mentioned X, I want to ask about..." instead of jumping in with "because you were talking about..."');
+        }
+        if ((emergingTotals.em_contrast||0) > 0) {
+          coachingLines.push('You framed contrast well — "going from that to something new" or "from there to here" is strong structural thinking. A contrast frame paired with a specific question can unlock real depth.');
+        }
+        if ((emergingTotals.em_followup||0) > 0) {
+          coachingLines.push('Your follow-up questions were there — even when they came out fragmented ("how, how was..."), the impulse to go deeper was right. Practice the question once in your head before asking it out loud.');
+        }
+
+        if (coachingLines.length > 0) {
+          emergingCallout = `<div class="emerging-callout">
+            <strong>Emerging Moves — ${totalEmerging} detected</strong>
+            <p style="margin-bottom:8px;">You are already doing the hardest part — listening and building on what your partner says. Now the goal is to slow down and express those ideas more clearly before asking your next question.</p>
+            ${coachingLines.map(l => `<p style="margin-bottom:6px;">${l}</p>`).join('')}
+          </div>`;
+        }
+      }
     }
 
     return `
@@ -1795,11 +2579,12 @@ function analyze() {
         ${growth.map(g => `<div class="comment-item growth">→ ${g}</div>`).join('')}
         ${flags.map(f => `<div class="comment-item flag">⚠ ${f}</div>`).join('')}
         ${strengths.length + growth.length + flags.length === 0 ? '<div class="comment-item" style="color:#999;font-style:italic">Not enough data for commentary.</div>' : ''}
+        ${emergingCallout}
     `;
   }
 
-  document.getElementById('interviewerCommentary').innerHTML = buildCommentary(iVoice, interviewer, true,  moveTotals, scores, questionLevels, missedOpps, [],     fillerTotals);
-  document.getElementById('respondentCommentary').innerHTML  = buildCommentary(rVoice, respondent, false, moveTotals, scores, questionLevels, [],         drifts, fillerTotals);
+  document.getElementById('interviewerCommentary').innerHTML = buildCommentary(iVoice, interviewer, true,  moveTotals, scores, questionLevels, missedOpps, [],     fillerTotals, emergingTotals);
+  document.getElementById('respondentCommentary').innerHTML  = buildCommentary(rVoice, respondent, false, moveTotals, scores, questionLevels, [],         drifts, fillerTotals, null);
 }
 
 // ─────────────────────────────────────────────
