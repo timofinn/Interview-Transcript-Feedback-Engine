@@ -1414,6 +1414,11 @@ function classifyQuestionLevel(q) {
     /what would (that|it) (look|feel|mean) like (for you)?\?/,
     /what do you (imagine|picture|envision|foresee)/,
     /if you (could|had) (do it again|another chance|one thing|one piece)/,
+    // Internal process — "walk me through your thoughts/feelings" = L3 (not external sequence)
+    /walk me through (your (thoughts|feelings|fears|mind|head|emotions|reasoning|why))/,
+    // Hypotheticals — "I'm wondering if you could go back" variants
+    /i'?m wondering if you could (go back|change|do|tell)/,
+    /if you could go back .{0,80}/,
     // Self-analysis / psychological reflection
     /what (do you think it is|is it) about (your|you|yourself)/,
     /what (is it|do you think) about (your|you) (temperament|personality|character|nature|upbringing|mindset)/,
@@ -1421,12 +1426,29 @@ function classifyQuestionLevel(q) {
     /what (drives|pulls|draws|pushes|compels|motivates) you/,
     /what does that (say|reveal|tell us) about (you|yourself)/,
     /how (do you make sense of|do you understand|would you explain) (that|yourself|your)/,
+    // Internal emotional / mental state (external event → internal experience = L3)
+    /how did (that|it|this|being|having|becoming|losing) .{0,40} affect you (mentally|emotionally|personally|inside|as a person)/,
+    /how did (that|it|this) affect you/,
+    /were you (struggling|dealing|coping|managing) (mentally|emotionally|inside|with)/,
+    // Fears / internal experience
+    /what were (your|the) (biggest|main|greatest|worst|deepest) fears/,
+    /what (scared|frightened|worried|concerned) you (most|the most|about)/,
+    // Self-revelation / personal change (events → who you became)
+    /what did (having|being|becoming|raising|losing|going through) .{0,40} teach you about yourself/,
+    /what did (that|it|this|having|being|becoming) .{0,40} teach you/,
+    /how did (that|it|this|being|having|becoming) .{0,50} change you/,
+    /how (has|have) (that|it|this|being|having|becoming) .{0,50} changed you/,
+    /how are you (different|changed) (now|today|since|because)/,
+    /who were you (before|after|without)/,
     // Evaluative / meaning-making
     /to what extent/,
     /how (significant|important|meaningful|valuable|consequential) (is|was|do you think)/,
     /do you think (people|others|everyone|society|we) (are|is|should|could|would)/,
     /how do you think .{0,50} (will|would|could|might) (help|change|affect|shape)/,
-    /what do you think (this|that|it|the|your) .{0,30} (means|says|reveals|shows)/,
+    /what do you think (this|that|it|the|your) .{0,30}(means|says|reveals|shows)/,
+    // Defining self / personal meaning
+    /what (is|does) (motherhood|fatherhood|parenthood|that experience|that moment|that choice|that relationship) (mean|look like) (to you|for you)/,
+    /how would you define .{0,40} (to yourself|for yourself|now|in your own words)/,
     // Confidence / forecasting / possibility
     /how confident are you/,
     /do you (think|believe|feel) you.{0,30} (will|would|can|could) (find|get|figure|make)/,
@@ -1448,8 +1470,10 @@ function classifyQuestionLevel(q) {
   // L2 — Gather Details
   // Requires recall of specifics: sequence, names, facts, examples, processes.
   // The respondent reaches into memory for concrete information.
+  // NOTE: "walk me through your thoughts/feelings/fears" is L3 — caught above. Only external-sequence
+  // "walk me through" falls to L2 here.
   const l2patterns = [
-    /walk me through/,/what happened (first|next|then|after)/,/who was (there|involved)/,
+    /walk me through (the|your (process|steps|what happened|how you|that day|that moment|that time|it))/,/what happened (first|next|then|after)/,/who was (there|involved)/,
     /how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,
     /what (specifically|exactly)/,/tell me more about/,
     /what did (you|they|he|she) (do|say|decide)/,
@@ -1486,7 +1510,7 @@ function classifyQuestionLevel(q) {
     // Strong L3 signals in any question
     if (/\b(to what extent|how confident|what would you say to|if you were (talking|speaking|giving advice)|why do you think you|what is it about (your|you))\b/.test(t)) return 3;
     // Reflective framing signals L3
-    if (/\b(mean|matter|shaped|changed you|say about|significant|imagine|picture|envision|think it is about)\b/.test(t)) return 3;
+    if (/\b(mean|matter|shaped|changed you|say about|significant|imagine|picture|envision|think it is about|affect you|teach you|fears|mentally|emotionally|different now|go back)\b/.test(t)) return 3;
     // Specific recall signals L2
     if (/\b(how|when|where|who|which|describe|walk|specific|example|what kind)\b/.test(t)) return 2;
     return 1;
@@ -2521,7 +2545,14 @@ function analyze() {
       if (moveTotals.personal >= 1) strengths.push('Personal connection move built rapport effectively.');
 
       if (scores.balanceScore <= 2) growth.push('Watch your air time — you were taking up too much of the conversation.');
-      if (!questionLevels.some(l=>l===3)) growth.push('Never reached Level 3 questions — push toward meaning and reflection.');
+      if (!questionLevels.some(l=>l===3)) {
+        const hasL2s = questionLevels.some(l=>l===2);
+        if (hasL2s) {
+          growth.push('Your questions gathered good detail but didn\'t fully reach Level 3. To get there, push from "what happened" into "what did that mean for you" — one more step toward meaning, identity, or reflection.');
+        } else {
+          growth.push('Questions stayed at surface level — try asking about fears, change, or what an experience taught your respondent about themselves.');
+        }
+      }
       if (moveTotals.followup <= 1) growth.push('More follow-up questions needed — build on what your respondent actually said.');
       if (scores.fillerScore <= 2) growth.push('Filler words are undercutting your presence — slow down before asking.');
       if (missedOpps.length >= 2) growth.push('Multiple missed opportunities to go deeper — notice when your respondent gives you something rich.');
