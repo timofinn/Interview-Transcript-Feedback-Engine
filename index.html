@@ -752,6 +752,8 @@
     canvas { max-width: 130px; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="page">
@@ -788,6 +790,11 @@ Finn: Really well, actually. I think..."></textarea>
 
   <!-- RESULTS -->
   <div id="results">
+
+    <!-- SAVE AS PDF BUTTON -->
+    <div style="text-align:right; margin-bottom: 16px;">
+      <button class="btn btn-secondary" id="savePdfBtn" onclick="saveAsPdf()">⬇ Save as PDF</button>
+    </div>
 
     <!-- SUMMARY COMMENTARY + MOVE COUNT -->
     <div class="commentary-section">
@@ -2663,6 +2670,79 @@ KAITLIN: What was it and why didn't you share it?
 FINN: My PowerSchool comment bank tutorial. I found it personally useful for progress reports. Why didn't I share it? I woke up at 5 in the morning to build it, meeting got canceled, and I was a little sour grape about it. But there's nothing stopping me from just pushing it out.
 KAITLIN: Makes sense to me. Well, those are all the questions that I have. Thank you so much for taking the time.
 FINN: Yeah --- now I'm going to see if this conversation got the full transcript and try to drag it over into a doc. Thanks for giving me this data.`;
+}
+
+// ─────────────────────────────────────────────
+// SAVE AS PDF — captures screen-accurate colors
+// ─────────────────────────────────────────────
+async function saveAsPdf() {
+  const btn = document.getElementById('savePdfBtn');
+  const original = btn.textContent;
+  btn.textContent = '⏳ Generating PDF...';
+  btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const target = document.getElementById('results');
+
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#f7f3ea',
+      scrollY: 0,
+      windowWidth: target.scrollWidth,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'letter',
+    });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 24;
+    const usableW = pageW - margin * 2;
+
+    const imgW = canvas.width;
+    const imgH = canvas.height;
+    const ratio = usableW / imgW;
+    const scaledH = imgH * ratio;
+
+    let yOffset = 0;
+    const pageImgH = pageH - margin * 2;
+
+    while (yOffset < scaledH) {
+      if (yOffset > 0) pdf.addPage();
+
+      const srcY = yOffset / ratio;
+      const srcH = Math.min(pageImgH / ratio, imgH - srcY);
+
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = imgW;
+      sliceCanvas.height = srcH;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY, imgW, srcH, 0, 0, imgW, srcH);
+
+      const sliceData = sliceCanvas.toDataURL('image/png');
+      const sliceRenderedH = srcH * ratio;
+      pdf.addImage(sliceData, 'PNG', margin, margin, usableW, sliceRenderedH);
+
+      yOffset += pageImgH;
+    }
+
+    const intName = document.getElementById('interviewer')?.value?.trim() || 'Interviewer';
+    const resName = document.getElementById('respondent')?.value?.trim() || 'Respondent';
+    pdf.save(`${intName}_${resName}_Interview_Analysis.pdf`);
+
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    alert('PDF generation failed — try again or use Ctrl+P / Cmd+P to print.');
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
