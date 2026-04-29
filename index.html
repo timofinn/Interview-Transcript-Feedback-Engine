@@ -785,16 +785,13 @@ Finn: Really well, actually. I think..."></textarea>
     <div>
       <button class="btn" onclick="analyze()">▶ Analyze Transcript</button>
       <button class="btn btn-secondary" onclick="loadExample()">Load Example</button>
+      <button class="btn btn-secondary" id="savePdfBtn" onclick="saveAsPdf()" style="display:none;">⬇ Save as PDF (Full Color)</button>
+      <button class="btn btn-secondary" id="printPdfBtn" onclick="window.print()" style="display:none;">🖨 Print Friendly PDF</button>
     </div>
   </div>
 
   <!-- RESULTS -->
   <div id="results">
-
-    <!-- SAVE AS PDF BUTTON -->
-    <div style="text-align:right; margin-bottom: 16px;">
-      <button class="btn btn-secondary" id="savePdfBtn" onclick="saveAsPdf()">⬇ Save as PDF</button>
-    </div>
 
     <!-- SUMMARY COMMENTARY + MOVE COUNT -->
     <div class="commentary-section">
@@ -889,12 +886,6 @@ Finn: Really well, actually. I think..."></textarea>
   </div><!-- /results -->
 
 </div><!-- /page -->
-
-<!-- PDF bar -->
-<div class="pdf-bar" id="pdfBar">
-  <button class="btn-pdf" onclick="window.print()">⬇ Save as PDF</button>
-  <span class="pdf-hint">In the print dialog, choose "Save as PDF" as the destination.</span>
-</div>
 
 <script>
 // ─────────────────────────────────────────────
@@ -2162,7 +2153,8 @@ function analyze() {
   // ─────────────── RENDER ───────────────
 
   document.getElementById('results').style.display = 'block';
-  document.getElementById('pdfBar').style.display = 'block';
+  document.getElementById('savePdfBtn').style.display = 'inline-block';
+  document.getElementById('printPdfBtn').style.display = 'inline-block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // PIE
@@ -2732,8 +2724,8 @@ async function saveAsPdf() {
       yOffset += pageImgH;
     }
 
-    const intName = document.getElementById('interviewer')?.value?.trim() || 'Interviewer';
-    const resName = document.getElementById('respondent')?.value?.trim() || 'Respondent';
+    const intName = document.getElementById('interviewerName')?.value?.trim() || 'Interviewer';
+    const resName = document.getElementById('respondentName')?.value?.trim() || 'Respondent';
     pdf.save(`${intName}_${resName}_Interview_Analysis.pdf`);
 
   } catch (err) {
