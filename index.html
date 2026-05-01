@@ -1613,6 +1613,10 @@ function parseTranscript(raw, interviewer, respondent) {
     .replace(/[：ː∶]/g, ':')
     .replace(/[–—―]/g, '-')
     // Normalize "Name -" / "Name-" speaker-label variants to "Name:"
+        // Normalize parenthesis-format labels: "(Miguel) text" → "Miguel: text"
+    // Line-start and mid-line both handled. Must run before timestamp strip.
+    .replace(/(^|\n)\(([A-Za-z][A-Za-z '.]{0,30}?)\)\s*/g, '$1$2: ')
+    .replace(/([^\n])\s*\(([A-Za-z][A-Za-z '.]{1,30}?)\)\s*/g, '$1\n$2: ')
     .replace(/(^|\n)([A-Za-z][A-Za-z '.]{0,30}?)\s*-\s+/g, '$1$2: ')
     .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -1661,6 +1665,10 @@ function parseTranscript(raw, interviewer, respondent) {
   // Save cleaned text for debug display
   report.cleanedTranscript = cleaned;
 
+  // Canonical speaker names — needed in Step 3 orphan handler and Step 5 inference
+  const intCanon = interviewer ? interviewer.toUpperCase() : null;
+  const resCanon = respondent  ? respondent.toUpperCase()  : null;
+
   // ── Step 3: Parse lines into turns ──────────────────────────────────────
   const speakerLineRE = /^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*(.*)$/;
   const lines = cleaned.split('\n');
@@ -1692,10 +1700,59 @@ function parseTranscript(raw, interviewer, respondent) {
         if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
         continue;
       }
+      // Guard: mis-labeled continuation detection.
+      // A line is almost certainly a continuation of the previous turn — not a real
+      // speaker switch — when ALL of these are true:
+      //   1. The text after the label starts with a lowercase letter
+      //   2. It contains no question mark
+      //   3. It is a short fragment (under 10 words) OR starts mid-sentence
+      //      (common when a transcription app mis-fires a speaker label mid-paragraph)
+      // Exception: single-word back-channels like "Yeah.", "Mhm.", "Okay." ARE real
+      // turns even if lowercase — we let those through (they have <= 2 words and no
+      // continuation feel). We only suppress when there are 3+ words starting lowercase
+      // with no question, suggesting a sentence fragment.
+      const startsLower = text.length > 0 && text[0] === text[0].toLowerCase() && /[a-z]/.test(text[0]);
+      const wordCount2  = text.trim().split(/\s+/).length;
+      const hasQuestion = text.includes('?');
+      const isMislabeledContinuation = startsLower && !hasQuestion && wordCount2 >= 3 &&
+                                        turns.length > 0 &&
+                                        turns[turns.length - 1].speaker !== canonical;
+      if (isMislabeledContinuation) {
+        // Treat as continuation of the previous turn, log it
+        turns[turns.length - 1].text += ' ' + text;
+        report.turnsInferred++;
+        report.inferredTurns.push({
+          index: turns.length,
+          originalLabel: rawLabel,
+          assignedTo: turns[turns.length - 1].speaker,
+          reason: 'mis-labeled continuation (lowercase fragment, no question)',
+          preview: text.slice(0, 60) + (text.length > 60 ? '\u2026' : '')
+        });
+        continue;
+      }
       lastSpeaker = canonical;
       if (text) turns.push({ speaker: canonical, text });
     } else {
-      if (turns.length > 0) {
+      // Orphaned line — no speaker label found.
+      // If it reads like a question AND the last speaker was the respondent,
+      // it almost certainly belongs to the interviewer (student forgot the label).
+      // Otherwise append to current turn as a continuation.
+      const orphanHasQ = trimmed.includes('?');
+      const lastIsRespondent = turns.length > 0 && intCanon && resCanon &&
+                               turns[turns.length - 1].speaker === resCanon;
+      if (orphanHasQ && lastIsRespondent && intCanon) {
+        // Treat as a new unlabeled interviewer turn
+        turns.push({ speaker: intCanon, text: trimmed });
+        lastSpeaker = intCanon;
+        report.turnsInferred++;
+        report.inferredTurns.push({
+          index: turns.length,
+          originalLabel: '(no label)',
+          assignedTo: intCanon,
+          reason: 'unlabeled question after respondent turn',
+          preview: trimmed.slice(0, 60) + (trimmed.length > 60 ? '…' : '')
+        });
+      } else if (turns.length > 0) {
         turns[turns.length - 1].text += ' ' + trimmed;
       } else if (lastSpeaker) {
         turns.push({ speaker: lastSpeaker, text: trimmed });
@@ -1715,8 +1772,6 @@ function parseTranscript(raw, interviewer, respondent) {
   }
 
   // ── Step 5: Inference pass ───────────────────────────────────────────────
-  const intCanon = interviewer ? interviewer.toUpperCase() : null;
-  const resCanon = respondent  ? respondent.toUpperCase()  : null;
   const knownSpeakers = new Set([intCanon, resCanon, 'NARRATOR'].filter(Boolean));
 
   merged.forEach((turn, idx) => {
