@@ -790,6 +790,9 @@ Finn: Really well, actually. I think..."></textarea>
     </div>
   </div>
 
+  <!-- CLEANUP REPORT (debug panel) -->
+  <div id="cleanupReport" style="display:none;margin-bottom:20px;font-family:Arial,sans-serif;font-size:8.5pt;"></div>
+
   <!-- RESULTS -->
   <div id="results">
 
@@ -1591,99 +1594,83 @@ function classifyQuestionLevel(q) {
 // ─────────────────────────────────────────────
 
 function parseTranscript(raw, interviewer, respondent) {
+  // ── Cleanup report (returned alongside turns) ──────────────────────────
+  const report = {
+    noColonRepaired:   0,
+    midLineSplit:      0,
+    turnsMerged:       0,
+    turnsInferred:     0,
+    inferredTurns:     [],   // { index, originalLabel, assignedTo, reason, preview }
+    unknownLabels:     [],   // label strings that appeared but weren't recognized
+    cleanedTranscript: '',   // final cleaned text before turn-parsing
+  };
+
   let cleaned = raw
-    // Normalize line endings
     .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-    // Strip BOM and invisible Unicode formatting chars (U+FEFF, U+200E/F, U+2060, U+00AD etc.)
-    // that survive from Word/Docs/phone pastes and break the /^[A-Za-z]/ speaker match
-    .replace(/[\uFEFF\uFFFE\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\u2064\u00AD]/g, '')
-    // Normalize non-breaking spaces and other Unicode spaces to regular space
-    .replace(/[  -​  　]/g, ' ')
-    // Normalize smart/curly quotes to straight quotes
+    .replace(/[﻿￾‌‍‎‏⁠⁡⁢⁣⁤­]/g, '')
+    .replace(/[   -   　]/g, ' ')
     .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
-    // Normalize Unicode colons/dashes to ASCII
     .replace(/[：ː∶]/g, ':')
     .replace(/[–—―]/g, '-')
-    // Normalize "Name -" and "Name-" speaker-label variants to "Name:"
-    // e.g. "Lerma -", "MYLES-", "Lerma- " → "Lerma:" so the standard parser picks them up.
-    // Only fires at line start or after a period/newline to avoid mangling real hyphens.
+    // Normalize "Name -" / "Name-" speaker-label variants to "Name:"
     .replace(/(^|\n)([A-Za-z][A-Za-z '.]{0,30}?)\s*-\s+/g, '$1$2: ')
-    // Strip timestamps
     .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\s{2,}\d{1,2}:\d{2}(?::\d{2})?\s*$/gm, '')
-    // Fix 'Name:text' with no space after colon
     .replace(/^([A-Za-z][A-Za-z '.]{0,30}?):([^ \n])/gm, '$1: $2')
-    // Normalize lowercase speaker labels at line start (e.g. 'mom:' -> 'Mom:')
     .replace(/^([a-z][a-z '.]{0,30}?):\s/gm, (m, name) => name.charAt(0).toUpperCase() + name.slice(1) + ': ')
-    // Normalize multiple spaces to single space per line
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/^[ \t]+|[ \t]+$/gm, '');
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ROBUST SPEAKER PARSING
-  // Handles: no space after colon, lowercase names, mid-paragraph handoffs,
-  // orphaned continuation lines, inconsistent capitalization.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // Step 1: Build a canonical name map from known interviewer/respondent names
-  // and any "Name:" patterns discovered at the start of a line.
-  // Maps any casing variant → canonical uppercase key.
-  const nameMap = {}; // lower → UPPER canonical
+  // ── Step 1: Build canonical name map ────────────────────────────────────
+  const nameMap = {};
   const addName = (n) => {
     if (!n || n.length < 2 || /^\d+$/.test(n)) return;
     nameMap[n.toLowerCase()] = n.toUpperCase();
   };
   if (interviewer) addName(interviewer);
   if (respondent)  addName(respondent);
-
-  // Discover names from lines starting with "Name:" or "Name :"
   cleaned.split('\n').forEach(line => {
     const m = line.trim().match(/^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*\S/);
     if (m) addName(m[1].trim());
   });
 
-  // Step 2: Pre-pass — insert newline before any known speaker name appearing mid-line.
-  // Catches:
-  //   (a) "...word Name: text"   — space before name
-  //   (b) "...word.Name: text"   — punctuation before name (no space)
-  //   (c) "...wordName: text"    — no separator at all (e.g. line-break ate the newline)
-  // Does NOT split when the match is already at the start of a line (the [^\n] anchor handles that).
+  // ── Step 1b: No-colon label fix — "MYLES How was..." → "MYLES: How was..." ──
+  if (Object.keys(nameMap).length > 0) {
+    const escB = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const nameAltsB = Object.keys(nameMap).map(escB).join('|');
+    const noColonRE = new RegExp('^((' + nameAltsB + '))\\s+(?!(' + nameAltsB + ')\\s)', 'gim');
+    cleaned = cleaned.replace(noColonRE, (m, name) => {
+      report.noColonRepaired++;
+      return name + ': ';
+    });
+  }
+
+  // ── Step 2: Split mid-line speaker handoffs ──────────────────────────────
   if (Object.keys(nameMap).length > 0) {
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Build alternation from both lower-cased keys AND their canonical upper forms
-    const nameAltsAll = [
-      ...Object.keys(nameMap),           // lower variants
-      ...Object.values(nameMap),          // UPPER canonical forms
-    ];
-    const nameAlts = [...new Set(nameAltsAll)].map(esc).join('|');
-    // Match: any non-newline char(s) immediately followed by a known name + colon.
-    // The lookbehind-style capture group ([^\n]) ensures we only split mid-line occurrences.
-    // We insert \n before the name label so subsequent line parsing picks it up normally.
+    const nameAltsAll = [...new Set([...Object.keys(nameMap), ...Object.values(nameMap)])];
+    const nameAlts = nameAltsAll.map(esc).join('|');
     const handoffRE = new RegExp('([^\\n])((' + nameAlts + ')\\s*:\\s)', 'gi');
     cleaned = cleaned.replace(handoffRE, (m, before, label) => {
-      // Only split if the character before the name is NOT itself a newline or a word boundary
-      // that would indicate a normal mid-sentence colon (e.g. "like: this"). We allow the
-      // split only when the preceding char is a word character, punctuation, or space — i.e.
-      // always, since we already guard with [^\n]. This is safe because nameMap only contains
-      // actual speaker names registered from the form inputs and line-start discovery.
+      report.midLineSplit++;
       return before + '\n' + label;
     });
   }
-  // Step 3: Parse lines into turns.
-  // Speaker line pattern: optional leading space, Name (with optional space before colon), colon, text
-  // Forgiving: matches "Name:text", "Name: text", "name : text", "NAME:text" etc.
+
+  // Save cleaned text for debug display
+  report.cleanedTranscript = cleaned;
+
+  // ── Step 3: Parse lines into turns ──────────────────────────────────────
   const speakerLineRE = /^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*(.*)$/;
   const lines = cleaned.split('\n');
   const turns = [];
   let lastSpeaker = null;
 
   for (const line of lines) {
-    // Strip any residual invisible/control chars (BOM, soft-hyphen, etc.) then trim
-    const trimmed = line.replace(/[\uFEFF\uFFFE\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\u2064\u00AD]/g, '').trim();
+    const trimmed = line.replace(/[﻿￾‌‍‎‏⁠⁡⁢⁣⁤­]/g, '').trim();
     if (!trimmed) continue;
 
-    // Narrator lines [in brackets]
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
       turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1, -1) });
       continue;
@@ -1693,37 +1680,68 @@ function parseTranscript(raw, interviewer, respondent) {
     if (m) {
       const rawLabel = m[1].trim();
       const text = m[2].trim();
-      // Skip if label looks like a number or URL fragment
       if (/^\d+$/.test(rawLabel) || rawLabel.includes('http')) {
         if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
         continue;
       }
-      // Only accept as a speaker turn if the label is a known name.
-      // This prevents mid-sentence colons (e.g. "like: something") from being parsed as speakers.
       const canonical = nameMap[rawLabel.toLowerCase()];
       if (!canonical) {
-        // Not a known speaker — treat as continuation
+        if (rawLabel.length > 1 && !report.unknownLabels.includes(rawLabel)) {
+          report.unknownLabels.push(rawLabel);
+        }
         if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
         continue;
       }
       lastSpeaker = canonical;
-      // If no text follows the colon, just set the speaker and wait for next line
-      if (text) {
-        turns.push({ speaker: canonical, text });
-      }
+      if (text) turns.push({ speaker: canonical, text });
     } else {
-      // Orphaned line — no speaker label found.
-      // Append to the current turn if one exists.
       if (turns.length > 0) {
         turns[turns.length - 1].text += ' ' + trimmed;
       } else if (lastSpeaker) {
-        // Edge case: orphaned line before any labeled turn
         turns.push({ speaker: lastSpeaker, text: trimmed });
       }
     }
   }
 
-  return turns;
+  // ── Step 4: Merge consecutive same-speaker turns ────────────────────────
+  const merged = [];
+  for (const turn of turns) {
+    if (merged.length > 0 && merged[merged.length - 1].speaker === turn.speaker) {
+      merged[merged.length - 1].text += ' ' + turn.text;
+      report.turnsMerged++;
+    } else {
+      merged.push({ ...turn });
+    }
+  }
+
+  // ── Step 5: Inference pass ───────────────────────────────────────────────
+  const intCanon = interviewer ? interviewer.toUpperCase() : null;
+  const resCanon = respondent  ? respondent.toUpperCase()  : null;
+  const knownSpeakers = new Set([intCanon, resCanon, 'NARRATOR'].filter(Boolean));
+
+  merged.forEach((turn, idx) => {
+    if (knownSpeakers.has(turn.speaker)) return;
+    const hasQ      = turn.text.includes('?');
+    const wordCount = turn.text.trim().split(/\s+/).length;
+    let inferredAs, reason;
+    if (hasQ && intCanon)            { inferredAs = intCanon; reason = 'contains question'; }
+    else if (wordCount > 25 && resCanon) { inferredAs = resCanon; reason = 'long narrative turn'; }
+    else if (intCanon)               { inferredAs = intCanon; reason = 'short unlabeled turn'; }
+    if (inferredAs) {
+      const originalLabel = turn.speaker;
+      turn.speaker = inferredAs;
+      report.turnsInferred++;
+      report.inferredTurns.push({
+        index: idx + 1,
+        originalLabel,
+        assignedTo: inferredAs,
+        reason,
+        preview: turn.text.slice(0, 60) + (turn.text.length > 60 ? '…' : '')
+      });
+    }
+  });
+
+  return { turns: merged, report };
 }
 
 // ─────────────────────────────────────────────
@@ -2224,6 +2242,98 @@ function buildRespondentHtml(rawText, hasDrift) {
 }
 
 // ─────────────────────────────────────────────
+// CLEANUP REPORT RENDERER
+// ─────────────────────────────────────────────
+
+function renderCleanupReport(report, interviewer, respondent) {
+  const el = document.getElementById('cleanupReport');
+  if (!el) return;
+
+  const hasIssues = report.noColonRepaired > 0 || report.midLineSplit > 0 ||
+                    report.turnsMerged > 0 || report.turnsInferred > 0 ||
+                    report.unknownLabels.length > 0;
+
+  const statusColor = hasIssues ? '#b45309' : '#166534';
+  const statusBg    = hasIssues ? '#fffbeb' : '#f0fdf4';
+  const statusBorder= hasIssues ? '#d97706' : '#16a34a';
+  const statusLabel = hasIssues ? '⚠ Repairs made' : '✓ Clean transcript';
+
+  const row = (label, val, highlight) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #e5e7eb;">
+      <span style="color:#555;font-size:7.5pt;">${label}</span>
+      <span style="font-weight:bold;font-size:7.5pt;color:${highlight && val > 0 ? '#b45309' : '#333'};">${val}</span>
+    </div>`;
+
+  const unknownBlock = report.unknownLabels.length > 0
+    ? `<div style="margin-top:6px;padding:6px 8px;background:#fef3c7;border-radius:3px;font-size:7pt;color:#92400e;">
+        <strong>Unrecognized labels:</strong> ${report.unknownLabels.map(l => `<code style="background:#fff;padding:1px 4px;border-radius:2px;border:1px solid #d97706;">${l}</code>`).join(' ')}
+        <div style="margin-top:3px;color:#78350f;">These appeared in the transcript but didn't match either speaker name. Content was appended to the previous turn.</div>
+       </div>` : '';
+
+  const inferredBlock = report.inferredTurns.length > 0
+    ? `<div style="margin-top:6px;">
+        <div style="font-size:7pt;font-weight:bold;color:#555;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em;">Inferred turns</div>
+        ${report.inferredTurns.map(t =>
+          `<div style="font-size:7pt;padding:3px 6px;margin-bottom:2px;background:#fff;border:1px solid #e5e7eb;border-radius:3px;">
+            <span style="color:#999;">Turn ${t.index}</span>
+            <span style="color:#b45309;margin:0 4px;">→ ${t.assignedTo}</span>
+            <span style="color:#6b7280;">(${t.reason})</span>
+            <div style="color:#888;margin-top:1px;font-style:italic;">"${t.preview}"</div>
+           </div>`
+        ).join('')}
+       </div>` : '';
+
+  // Build cleaned transcript preview
+  const cleanedLines = report.cleanedTranscript.split('\n').filter(l => l.trim()).slice(0, 60);
+  const cleanedPreview = cleanedLines.map(l => {
+    const m = l.match(/^([A-Za-z][A-Za-z '.]{0,30}?):\s*(.*)/);
+    if (m) {
+      const sp = m[1].toUpperCase();
+      const isInt = sp === (interviewer||'').toUpperCase();
+      const isRes = sp === (respondent||'').toUpperCase();
+      const labelColor = isInt ? '#1d4ed8' : isRes ? '#065f46' : '#6b7280';
+      return `<div style="margin-bottom:3px;"><span style="font-weight:bold;color:${labelColor};min-width:80px;display:inline-block;">${m[1].toUpperCase()}:</span><span style="color:#333;">${m[2]}</span></div>`;
+    }
+    return `<div style="color:#9ca3af;font-style:italic;font-size:6.5pt;">${l}</div>`;
+  }).join('');
+  const truncNote = report.cleanedTranscript.split('\n').filter(l=>l.trim()).length > 60
+    ? `<div style="color:#9ca3af;font-size:6.5pt;margin-top:4px;">…showing first 60 lines</div>` : '';
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="border:1px solid ${statusBorder};border-radius:6px;background:${statusBg};overflow:hidden;">
+      <button onclick="this.closest('div').querySelector('.cr-body').style.display = this.closest('div').querySelector('.cr-body').style.display==='none' ? 'block' : 'none'; this.querySelector('.cr-arrow').textContent = this.querySelector('.cr-arrow').textContent==='▶' ? '▼' : '▶';"
+        style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:none;border:none;cursor:pointer;font-family:Arial,sans-serif;">
+        <span style="font-size:8pt;font-weight:bold;color:${statusColor};letter-spacing:0.04em;">🔍 Transcript Cleanup Report &nbsp;<span style="font-weight:normal;color:${statusColor};">${statusLabel}</span></span>
+        <span class="cr-arrow" style="color:${statusColor};font-size:9pt;">▶</span>
+      </button>
+      <div class="cr-body" style="display:none;padding:0 14px 12px 14px;border-top:1px solid ${statusBorder};">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:10px;">
+          <div>
+            ${row('No-colon labels repaired', report.noColonRepaired, true)}
+            ${row('Mid-line speaker labels split', report.midLineSplit, true)}
+          </div>
+          <div>
+            ${row('Same-speaker turns merged', report.turnsMerged, true)}
+            ${row('Ambiguous turns inferred', report.turnsInferred, true)}
+          </div>
+        </div>
+        ${unknownBlock}
+        ${inferredBlock}
+        <div style="margin-top:12px;">
+          <button onclick="const p=this.nextElementSibling;p.style.display=p.style.display==='none'?'block':'none';this.textContent=p.style.display==='none'?'▶ Show cleaned transcript':'▼ Hide cleaned transcript';"
+            style="font-size:7pt;font-weight:bold;color:#4b5563;background:none;border:1px solid #d1d5db;border-radius:3px;padding:3px 8px;cursor:pointer;font-family:Arial,sans-serif;">
+            ▶ Show cleaned transcript
+          </button>
+          <div style="display:none;margin-top:8px;padding:10px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;font-family:monospace;font-size:7pt;line-height:1.6;max-height:300px;overflow-y:auto;">
+            ${cleanedPreview}${truncNote}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
 // MAIN ANALYZE FUNCTION
 // ─────────────────────────────────────────────
 
@@ -2234,10 +2344,13 @@ function analyze() {
   let interviewer = document.getElementById('interviewerName').value.trim().toUpperCase();
   let respondent  = document.getElementById('respondentName').value.trim().toUpperCase();
 
-  const turns = parseTranscript(raw, interviewer, respondent);
+  const { turns, report: parseReport } = parseTranscript(raw, interviewer, respondent);
   const speakers = [...new Set(turns.map(t=>t.speaker).filter(s=>s!=='NARRATOR'))];
   if (!interviewer && speakers.length >= 1) interviewer = speakers[0];
   if (!respondent  && speakers.length >= 2) respondent  = speakers[1];
+
+  // ── Render Cleanup Report ────────────────────────────────────────────────
+  renderCleanupReport(parseReport, interviewer, respondent);
 
   // ── Talk time ──
   const iTurns = turns.filter(t=>t.speaker===interviewer);
