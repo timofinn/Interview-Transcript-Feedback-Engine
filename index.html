@@ -1566,16 +1566,15 @@ function parseTranscript(raw, interviewer, respondent) {
     if (m) addName(m[1].trim());
   });
 
-  // Step 2: Pre-pass — insert newline before any mid-paragraph "Name:" handoff.
-  // Uses discovered names so we don't falsely split on "school:" or "like:".
+  // Step 2: Pre-pass — insert newline before any known speaker name appearing mid-paragraph.
+  // Approach: for each known name, find "anytext Name: " and split before "Name: ".
   if (Object.keys(nameMap).length > 0) {
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const nameAlts = Object.keys(nameMap).map(esc).join('|');
-    // Match: non-newline char, whitespace, then known-name colon — split there
-    const handoffRE = new RegExp(`([^\\n])(\\s)((?:${nameAlts})\\s*:\\s*)`, 'gi');
-    cleaned = cleaned.replace(handoffRE, (m, before, space, label) => before + '\n' + label);
+    // Split on: (non-newline)(space)(KnownName)(optional space)(:)(space)
+    const handoffRE = new RegExp('([^\\n]) ((' + nameAlts + ')\\s*:\\s)', 'gi');
+    cleaned = cleaned.replace(handoffRE, (m, before, label) => before + '\n' + label);
   }
-
   // Step 3: Parse lines into turns.
   // Speaker line pattern: optional leading space, Name (with optional space before colon), colon, text
   // Forgiving: matches "Name:text", "Name: text", "name : text", "NAME:text" etc.
