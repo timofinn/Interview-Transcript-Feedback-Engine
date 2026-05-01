@@ -457,10 +457,10 @@
   }
   .legend-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px 24px;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 32px;
   }
-  @media (max-width: 700px) { .legend-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) { .legend-grid { grid-template-columns: 1fr; } }
   .legend-col h3 {
     font-family: Arial, sans-serif;
     font-size: 8pt;
@@ -2714,6 +2714,12 @@ function analyze() {
   };
 
   document.getElementById('legendGrid').innerHTML = `
+    <div style="grid-column: 1 / -1; padding: 12px 16px; background: #f0f4ff; border-left: 3px solid #4a6fdc; border-radius: 0 4px 4px 0; margin-bottom: 16px;">
+      <div style="font-size:8.5pt;font-weight:bold;color:#2a4aaa;margin-bottom:5px;font-family:Arial,sans-serif;letter-spacing:0.04em;">How this tool scores you</div>
+      <div style="font-size:8pt;color:#444;line-height:1.6;font-family:Arial,sans-serif;">
+        This tool listens for phrases and patterns that match the techniques you practiced in class. Every time you use language that fits one of these moves, it gets flagged, highlighted, and counted toward your score. It\'s not judging your ideas — it\'s tracking your technique. The more intentional your language, the more it picks up. Think of it less like a grader and more like a mirror: it shows you where your moves landed.
+      </div>
+    </div>
     <div class="legend-col">
       <div class="legend-col-header">Verbal Moves</div>
       <div style="display:flex;flex-direction:column;">
@@ -2725,8 +2731,8 @@ function analyze() {
       <div style="display:flex;flex-direction:column;">
         ${structMoves.map(buildMoveItem).join('')}
       </div>
-      <div style="margin-top:14px;">
-        <div class="legend-col-header">Question Levels</div>
+      <div style="margin-top:18px;">
+        <div class="legend-col-header">Question Depth</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
           <div class="legend-item" style="align-items:flex-start;">
             <div class="legend-swatch hl-l1" style="min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
@@ -2744,12 +2750,6 @@ function analyze() {
             <div class="legend-swatch" style="background:#f9f200;border:1px solid #d4c800;border-radius:2px;min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
             <div class="legend-text"><strong style="font-size:8.5pt;">Verbal Filler</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">um, uh, like, you know — harmless in small doses, distracting in large ones.</span></div>
           </div>
-        </div>
-      </div>
-      <div style="margin-top:16px;padding:10px 12px;background:#f0f4ff;border-left:3px solid #4a6fdc;border-radius:0 4px 4px 0;">
-        <div style="font-size:8pt;font-weight:bold;color:#2a4aaa;margin-bottom:4px;font-family:Arial,sans-serif;">How this tool scores you</div>
-        <div style="font-size:7.5pt;color:#444;line-height:1.55;font-family:Arial,sans-serif;">
-          This tool listens for phrases and patterns that match the techniques you practiced in class. Every time you use language that fits one of these moves, it gets flagged, highlighted, and counted toward your score. It\'s not judging your ideas — it\'s tracking your technique. The more intentional your language, the more it picks up. Think of it less like a grader and more like a mirror: it shows you where your moves landed.
         </div>
       </div>
     </div>
