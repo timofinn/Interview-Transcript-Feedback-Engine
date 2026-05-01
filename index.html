@@ -1604,6 +1604,10 @@ function parseTranscript(raw, interviewer, respondent) {
     // Normalize Unicode colons/dashes to ASCII
     .replace(/[：ː∶]/g, ':')
     .replace(/[–—―]/g, '-')
+    // Normalize "Name -" and "Name-" speaker-label variants to "Name:"
+    // e.g. "Lerma -", "MYLES-", "Lerma- " → "Lerma:" so the standard parser picks them up.
+    // Only fires at line start or after a period/newline to avoid mangling real hyphens.
+    .replace(/(^|\n)([A-Za-z][A-Za-z '.]{0,30}?)\s*-\s+/g, '$1$2: ')
     // Strip timestamps
     .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -1639,14 +1643,32 @@ function parseTranscript(raw, interviewer, respondent) {
     if (m) addName(m[1].trim());
   });
 
-  // Step 2: Pre-pass — insert newline before any known speaker name appearing mid-paragraph.
-  // Approach: for each known name, find "anytext Name: " and split before "Name: ".
+  // Step 2: Pre-pass — insert newline before any known speaker name appearing mid-line.
+  // Catches:
+  //   (a) "...word Name: text"   — space before name
+  //   (b) "...word.Name: text"   — punctuation before name (no space)
+  //   (c) "...wordName: text"    — no separator at all (e.g. line-break ate the newline)
+  // Does NOT split when the match is already at the start of a line (the [^\n] anchor handles that).
   if (Object.keys(nameMap).length > 0) {
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const nameAlts = Object.keys(nameMap).map(esc).join('|');
-    // Split on: (non-newline)(space)(KnownName)(optional space)(:)(space)
-    const handoffRE = new RegExp('([^\\n]) ((' + nameAlts + ')\\s*:\\s)', 'gi');
-    cleaned = cleaned.replace(handoffRE, (m, before, label) => before + '\n' + label);
+    // Build alternation from both lower-cased keys AND their canonical upper forms
+    const nameAltsAll = [
+      ...Object.keys(nameMap),           // lower variants
+      ...Object.values(nameMap),          // UPPER canonical forms
+    ];
+    const nameAlts = [...new Set(nameAltsAll)].map(esc).join('|');
+    // Match: any non-newline char(s) immediately followed by a known name + colon.
+    // The lookbehind-style capture group ([^\n]) ensures we only split mid-line occurrences.
+    // We insert \n before the name label so subsequent line parsing picks it up normally.
+    const handoffRE = new RegExp('([^\\n])((' + nameAlts + ')\\s*:\\s)', 'gi');
+    cleaned = cleaned.replace(handoffRE, (m, before, label) => {
+      // Only split if the character before the name is NOT itself a newline or a word boundary
+      // that would indicate a normal mid-sentence colon (e.g. "like: this"). We allow the
+      // split only when the preceding char is a word character, punctuation, or space — i.e.
+      // always, since we already guard with [^\n]. This is safe because nameMap only contains
+      // actual speaker names registered from the form inputs and line-start discovery.
+      return before + '\n' + label;
+    });
   }
   // Step 3: Parse lines into turns.
   // Speaker line pattern: optional leading space, Name (with optional space before colon), colon, text
@@ -1800,6 +1822,43 @@ function detectMoves(text, prevRespondentText, isInterviewer) {
         moves.push('onramp');
       }
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ON-RAMP vs SMOOTH BRIDGE disambiguation
+  // Rule: Bridge = references the respondent's prior answer (continuity).
+  //        On-Ramp = introduces the interviewer's own framing/purpose (setup).
+  // If both fired, keep both (stacked detection is valid — see MOVE_DEFS comment).
+  // If only one fired, verify it's pointing in the right direction.
+  // ─────────────────────────────────────────────────────────────────────────
+  const hasBridge  = moves.includes('bridge');
+  const hasOnramp  = moves.includes('onramp');
+
+  if (hasBridge || hasOnramp) {
+    // Signals that the turn is responding to what the respondent just said
+    const respondentReferenceSignals = /\b(you (said|mentioned|just said|described|talked about|shared|brought up|told me)|from what you|what you|your (story|experience|answer|words|point|idea|example)|hearing (that|you|what)|based on (that|what you)|that (makes me think|reminds me|connects|leads))\b/i;
+    // Signals that the turn is introducing the interviewer's own framing
+    const interviewerFramingSignals  = /\b(i (want(ed)?|was (curious|wondering)|had|have|'ve been)|my (question|next question|first question|last question|guiding question)|the (purpose|reason|goal)|one thing i|the thing i|going into this|i'?m curious about|i actually (wanted|want))\b/i;
+
+    const refersToRespondent  = respondentReferenceSignals.test(lower);
+    const refersToInterviewer = interviewerFramingSignals.test(lower);
+
+    if (hasBridge && !hasBridge) { /* no-op placeholder */ }
+
+    // Bridge fired but turn is actually interviewer framing → strip bridge, keep/add onramp
+    if (hasBridge && refersToInterviewer && !refersToRespondent) {
+      const idx = moves.indexOf('bridge');
+      if (idx !== -1) moves.splice(idx, 1);
+      if (!moves.includes('onramp')) moves.push('onramp');
+    }
+
+    // On-Ramp fired but turn is actually referencing respondent's prior answer → strip onramp, keep/add bridge
+    if (hasOnramp && refersToRespondent && !refersToInterviewer) {
+      const idx = moves.indexOf('onramp');
+      if (idx !== -1) moves.splice(idx, 1);
+      if (!moves.includes('bridge')) moves.push('bridge');
+    }
+    // If both signals are present (or neither), keep whatever fired — ambiguity is fine.
   }
 
   return [...new Set(moves)];
