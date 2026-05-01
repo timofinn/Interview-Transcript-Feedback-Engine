@@ -1522,60 +1522,102 @@ function classifyQuestionLevel(q) {
 
 function parseTranscript(raw, interviewer, respondent) {
   let cleaned = raw
-    .replace(/\r\n/g, '\n')
+    // Normalize line endings
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    // Normalize non-breaking spaces and other Unicode spaces to regular space
+    .replace(/[  -​  　]/g, ' ')
+    // Normalize smart/curly quotes to straight quotes
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    // Normalize Unicode colons/dashes to ASCII
+    .replace(/[：ː∶]/g, ':')
+    .replace(/[–—―]/g, '-')
+    // Strip timestamps
     .replace(/[\[\(]\d{1,2}:\d{2}(?::\d{2})?\]?\)?/g, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/\s{2,}\d{1,2}:\d{2}(?::\d{2})?\s*$/gm, '')
+    // Fix 'Name:text' with no space after colon
+    .replace(/^([A-Za-z][A-Za-z '.]{0,30}?):([^ \n])/gm, '$1: $2')
+    // Normalize lowercase speaker labels at line start (e.g. 'mom:' -> 'Mom:')
+    .replace(/^([a-z][a-z '.]{0,30}?):\s/gm, (m, name) => name.charAt(0).toUpperCase() + name.slice(1) + ': ')
+    // Normalize multiple spaces to single space per line
+    .replace(/[ \t]{2,}/g, ' ')
     .replace(/^[ \t]+|[ \t]+$/gm, '');
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // ROBUST SPEAKER PARSING
+  // Handles: no space after colon, lowercase names, mid-paragraph handoffs,
+  // orphaned continuation lines, inconsistent capitalization.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Step 1: Build a canonical name map from known interviewer/respondent names
+  // and any "Name:" patterns discovered at the start of a line.
+  // Maps any casing variant → canonical uppercase key.
+  const nameMap = {}; // lower → UPPER canonical
+  const addName = (n) => {
+    if (!n || n.length < 2 || /^\d+$/.test(n)) return;
+    nameMap[n.toLowerCase()] = n.toUpperCase();
+  };
+  if (interviewer) addName(interviewer);
+  if (respondent)  addName(respondent);
+
+  // Discover names from lines starting with "Name:" or "Name :"
+  cleaned.split('\n').forEach(line => {
+    const m = line.trim().match(/^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*\S/);
+    if (m) addName(m[1].trim());
+  });
+
+  // Step 2: Pre-pass — insert newline before any mid-paragraph "Name:" handoff.
+  // Uses discovered names so we don't falsely split on "school:" or "like:".
+  if (Object.keys(nameMap).length > 0) {
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const nameAlts = Object.keys(nameMap).map(esc).join('|');
+    // Match: non-newline char, whitespace, then known-name colon — split there
+    const handoffRE = new RegExp(`([^\\n])(\\s)((?:${nameAlts})\\s*:\\s*)`, 'gi');
+    cleaned = cleaned.replace(handoffRE, (m, before, space, label) => before + '\n' + label);
+  }
+
+  // Step 3: Parse lines into turns.
+  // Speaker line pattern: optional leading space, Name (with optional space before colon), colon, text
+  // Forgiving: matches "Name:text", "Name: text", "name : text", "NAME:text" etc.
+  const speakerLineRE = /^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*(.*)$/;
   const lines = cleaned.split('\n');
-  const formatALines = lines.filter(l => /^[^:\n]{1,40}:\s+\S/.test(l.trim()));
-  const formatBLines = lines.filter(l => /^\S[^:\n]{0,38}$/.test(l.trim()) && l.trim().length < 35);
-  const useFormatB = formatALines.length < 3 && formatBLines.length >= 2;
-
   const turns = [];
+  let lastSpeaker = null;
 
-  if (useFormatB) {
-    const nameCandidates = {};
-    lines.forEach(l => {
-      const t = l.trim();
-      if (t.length > 0 && t.length < 35 && !/[.!?,]/.test(t) && !/\d{1,2}:\d{2}/.test(t))
-        nameCandidates[t.toUpperCase()] = (nameCandidates[t.toUpperCase()]||0)+1;
-    });
-    const speakerNames = new Set(Object.entries(nameCandidates).filter(([,v])=>v>=2).map(([k])=>k));
-    let currentSpeaker = null;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-        turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1,-1) }); continue;
-      }
-      if (speakerNames.has(trimmed.toUpperCase())) {
-        currentSpeaker = trimmed.toUpperCase();
-      } else if (currentSpeaker) {
-        turns.push({ speaker: currentSpeaker, text: trimmed });
-      } else {
-        if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
-      }
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Narrator lines [in brackets]
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1, -1) });
+      continue;
     }
-  } else {
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-        turns.push({ speaker: 'NARRATOR', text: trimmed.slice(1,-1) }); continue;
+
+    const m = trimmed.match(speakerLineRE);
+    if (m) {
+      const rawLabel = m[1].trim();
+      const text = m[2].trim();
+      // Skip if label looks like a number or URL fragment
+      if (/^\d+$/.test(rawLabel) || rawLabel.includes('http')) {
+        if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
+        continue;
       }
-      const speakerMatch = trimmed.match(/^([^:\-—]{1,40}?)[\:\-—]\s+(.+)$/);
-      if (speakerMatch) {
-        const rawLabel = speakerMatch[1].trim();
-        const text = speakerMatch[2].trim();
-        if (/^\d+$/.test(rawLabel) || rawLabel.includes('http')) {
-          if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
-          continue;
-        }
-        if (text) turns.push({ speaker: rawLabel.toUpperCase(), text });
-      } else {
-        if (turns.length > 0) turns[turns.length-1].text += ' ' + trimmed;
+      // Resolve to canonical uppercase name if known; otherwise use as-is uppercased
+      const canonical = nameMap[rawLabel.toLowerCase()] || rawLabel.toUpperCase();
+      lastSpeaker = canonical;
+      // If no text follows the colon, just set the speaker and wait for next line
+      if (text) {
+        turns.push({ speaker: canonical, text });
+      }
+    } else {
+      // Orphaned line — no speaker label found.
+      // Append to the current turn if one exists.
+      if (turns.length > 0) {
+        turns[turns.length - 1].text += ' ' + trimmed;
+      } else if (lastSpeaker) {
+        // Edge case: orphaned line before any labeled turn
+        turns.push({ speaker: lastSpeaker, text: trimmed });
       }
     }
   }
