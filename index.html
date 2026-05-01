@@ -1603,8 +1603,14 @@ function parseTranscript(raw, interviewer, respondent) {
         if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
         continue;
       }
-      // Resolve to canonical uppercase name if known; otherwise use as-is uppercased
-      const canonical = nameMap[rawLabel.toLowerCase()] || rawLabel.toUpperCase();
+      // Only accept as a speaker turn if the label is a known name.
+      // This prevents mid-sentence colons (e.g. "like: something") from being parsed as speakers.
+      const canonical = nameMap[rawLabel.toLowerCase()];
+      if (!canonical) {
+        // Not a known speaker — treat as continuation
+        if (turns.length > 0) turns[turns.length - 1].text += ' ' + trimmed;
+        continue;
+      }
       lastSpeaker = canonical;
       // If no text follows the colon, just set the speaker and wait for next line
       if (text) {
