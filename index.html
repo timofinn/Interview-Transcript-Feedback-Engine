@@ -1524,6 +1524,9 @@ function parseTranscript(raw, interviewer, respondent) {
   let cleaned = raw
     // Normalize line endings
     .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    // Strip BOM and invisible Unicode formatting chars (U+FEFF, U+200E/F, U+2060, U+00AD etc.)
+    // that survive from Word/Docs/phone pastes and break the /^[A-Za-z]/ speaker match
+    .replace(/[\uFEFF\uFFFE\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\u2064\u00AD]/g, '')
     // Normalize non-breaking spaces and other Unicode spaces to regular space
     .replace(/[  -​  　]/g, ' ')
     // Normalize smart/curly quotes to straight quotes
@@ -1584,7 +1587,8 @@ function parseTranscript(raw, interviewer, respondent) {
   let lastSpeaker = null;
 
   for (const line of lines) {
-    const trimmed = line.trim();
+    // Strip any residual invisible/control chars (BOM, soft-hyphen, etc.) then trim
+    const trimmed = line.replace(/[\uFEFF\uFFFE\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\u2064\u00AD]/g, '').trim();
     if (!trimmed) continue;
 
     // Narrator lines [in brackets]
