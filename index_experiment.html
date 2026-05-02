@@ -998,26 +998,33 @@ const MOVE_DEFS = [
     /\bdid (a light|things) (shine|get better|improve|turn around)\b/i,/\bwould you say (your|he|she|they|it)\b/i,
     /\bdo you have any (other|more|final)? ?messages?\b/i,/\bwhat (would you|do you) (have to say|say) about that\b/i,
     /\bwhat could you build (upon|on) that\b/i,
-    // Analytical / hypothesis follow-up — "Is this trip an attempt to recapture X?"
-    // Binary framing of an interpretive hypothesis — distinct from emotional follow-ups
     /\bis (this|that) .{0,60} (an attempt|a way|your way|an effort) to (recapture|find|rediscover|get back|reconnect with|escape)\b/i,
-    // "To what extent do you think X?" — evaluative degree question
     /\bto what extent (do|did|does) you (think|believe|feel|consider)\b/i,
-    // Short naturalistic follow-ups — "What made that happen?", "Why do you think that was?"
     /\bwhat made (that|it|this) (happen|change|shift|click|stick|work|fall apart)\b/i,
     /\bwhy (do|did) you think that (was|happened|is|worked|didn'?t)?\b/i,
-    // "How did that feel?" / "What was that like for you?" — short direct emotional follow-up
     /\bhow did (that|it|this) (feel|land|sit with you|hit you)\b/i,
     /\bwhat was (that|it|this) (like|actually like) (for you)?\b/i,
-    // "What happened after that?" / "What came next?" — narrative continuation
     /\bwhat (came|happened) (next|after|then|following that)\b/i,
-    // "Can you say more about that?" / "What do you mean by that?" — elaboration prompts
     /\bcan you (say|tell me|share) more (about that|on that)?\b/i,
     /\bwhat (do|did) you mean (by that|when you said|exactly)?\b/i,
-    // "Why did that matter to you?" — significance follow-up (short form)
     /\bwhy did (that|it|this) (matter|stick|affect you|mean something|feel important)\b/i,
-    // "How did you deal with that?" — coping / response follow-up
     /\bhow did you (deal with|respond to|handle|get through|process) (that|it|this)\b/i,
+    // "you mentioned..." — explicit call-back follow-up
+    /\byou (mentioned|said|talked about|brought up) (how|that|the fact|something about)\b/i,
+    // "do you think that..." — opinion/hypothesis follow-up after a respondent statement
+    /\bdo you think that.{0,80}\?/i,
+    // "do you think if..." — conditional follow-up
+    /\bdo you think if (you|it|that|things)\b/i,
+    // "what was that like..." — experience follow-up
+    /\bwhat was (it|that) like (going|being|having|coming|growing|knowing|starting)\b/i,
+    // "how did that change..." — change/impact follow-up
+    /\bhow did that (change|affect|shape|impact|shift) (you|things|your)\b/i,
+    // "what did that feel like..." — sensory/emotional recall follow-up
+    /\bwhat did that (feel|sound|look|seem) like\b/i,
+    // "do you think your experience would have changed?" — conditional hypothetical
+    /\bdo you think (your|that|it|things) (would have|could have|might have) (changed|been different|been better|been worse)\b/i,
+    // "can't say if it would have been better or worse, but..." — nuanced compare
+    /\b(better or worse|different|changed) (just because|because|since|given)\b/i,
   ] },
   { key:'personal',    label:'Personal Connection',  color:'#fecaca', cat:'verbal',     patterns:[
     /\bfor me\b/i,/\bi also\b/i,/\bi was\b.*\btoo\b/i,/\bsimilar(ly)?\b/i,/\brelates to\b/i,/\bme too\b/i,
@@ -1072,6 +1079,16 @@ const MOVE_DEFS = [
     // Conceptual / non-emotional naming — "That sense of X still feels a little unclear"
     // Names a state or position rather than an emotion — distinct from emotional labeling
     /\bthat (sense of|feeling of|idea of|notion of|question of) .{0,40} (feels?|seems?|sounds?) (a (little|bit)|still|kind of|kinda|unclear|unresolved|uncertain|fuzzy|developing)\b/i,
+    // Interpretive framing — "it sounds like...", "it seems like..."
+    /\bit (sounds|seems) like (you('re| are)|that|there('s| is)|you might|you were)\b/i,
+    // "I wonder if..." — open interpretive move
+    /\bi wonder if (you|that|it|there|this)\b/i,
+    // "that must have felt..." — empathic naming
+    /\bthat must have (felt|been|seemed|looked) (like |as if |as though )?\b/i,
+    // "there was some..." — subtext naming with hedging
+    /\bthere (was|is|seems to be|sounds like there was) (some|a (bit|lot) of|a kind of|a sense of)\b/i,
+    // "under that..." / "underneath that..." — layered meaning
+    /\b(under|underneath|beneath) (that|it|there|all of that)\b/i,
     // "You're at a kind of crossroads / turning point / inflection point"
     /\byou'?re (at|in) (a kind of|a sort of|kind of|sort of|a|an)? ?(crossroads|turning point|inflection point|in-between|transition|liminal|threshold|moment of)\b/i,
     // "It sounds like X becomes less of a threat / more of a Y"
@@ -1112,6 +1129,16 @@ const MOVE_DEFS = [
     /^(mm-?hmm|uh-?huh)[,.]?\s+(what else|go on|say more|and\?)[?.]?$/i,
     // "I see, go on" — acknowledgment + continuation
     /^(i see|got it|right)[,.]?\s+(go on|keep going|say more|tell me more)[.!]?$/i,
+    // "Can you say more about that?" — direct elaboration nudge
+    /\bcan you (say|tell me|share|explain|describe) (a (little |bit )?)?(more|further) (about that|on that|about this)?\b/i,
+    // "Could you explain that more?" / "Could you go into that?"
+    /\bcould you (explain|describe|go into|talk about|expand on) (that|this|it) (a (little|bit) )?(more|further)?\b/i,
+    // "What else?" as a standalone or near-standalone
+    /^(and )?(what else|what more|anything else you (want|wanted|can) (to )?(add|say|share))[?.]?$/i,
+    // "Tell me more." / "Tell me more about that."
+    /^tell me (more|a (little|bit) more)(\.| about (that|this|it)\.?)?$/i,
+    // "Say more." / "Say more about that."
+    /^say (more|a (little|bit) more)(\.| about (that|this|it)\.?)?$/i,
   ] },
   { key:'summarizing', label:'The Closer',             color:'#fed7aa', cat:'structural', patterns:[
     /\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,
@@ -1371,6 +1398,20 @@ const MOVE_DEFS = [
     /\bwhat'?s (one|a (good|specific|quick))? ?example of (that|this|what you mean)\b/i,
     // "Can you think of a specific time?" — direct recall prompt
     /\bcan you (think of|remember|recall) a (specific |particular |real )?(time|moment|situation|example) (when|where|that)?\b/i,
+    // "Do you remember..." — open narrative recall
+    /\bdo you remember (what|how|where|who|why|the|that|when)\b/i,
+    // "Where were you when..." — scene-setting memory prompt
+    /\bwhere were you when\b/i,
+    // "What was the first day like..." / "What was that day like..." — day-level recall
+    /\bwhat was (the (first|last|very first|very last|next|that) )?(day|morning|afternoon|evening|night|moment|week) like\b/i,
+    // "Can you walk me through..." — narrative process prompt
+    /\bcan you walk me through (what happened|how it|that|the)\b/i,
+    // "What did that day feel like?" — sensory/emotional day recall
+    /\bwhat did (that|the|it|that day|that moment|that time) (feel|look|sound|seem) like\b/i,
+    // "Take me back to..." — temporal anchoring
+    /\btake me back to (that|the|a|when)\b/i,
+    // "What's the first thing you remember about...?" — anchor memory
+    /\bwhat'?s the (first|earliest|last) (thing|moment|memory|image|detail) you remember (about|from|of|when)\b/i,
   ] },
 ];
 
@@ -1669,14 +1710,29 @@ function parseTranscript(raw, interviewer, respondent) {
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/^[ \t]+|[ \t]+$/gm, '');
 
-  // ── Step 1: Build canonical name map ────────────────────────────────────
+  // ── Step 0: Raw pre-scan — find ALL speaker labels anywhere in the text ──
+  // This runs before nameMap is used, so it catches names that only appear
+  // mid-paragraph (never at line-start) and would otherwise be missed.
   const nameMap = {};
   const addName = (n) => {
     if (!n || n.length < 2 || /^\d+$/.test(n)) return;
     nameMap[n.toLowerCase()] = n.toUpperCase();
   };
+  // Seed with input-box names first (highest confidence)
   if (interviewer) addName(interviewer);
   if (respondent)  addName(respondent);
+  // Scan entire raw text for "Word:" or "Two Words:" patterns anywhere
+  // Uses the full raw string (before any line-splitting) to catch mid-para labels
+  const preScanRE = /(?:^|[\s.!?])([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)?)\s*:/gm;
+  let preScanMatch;
+  while ((preScanMatch = preScanRE.exec(raw)) !== null) {
+    const candidate = preScanMatch[1].trim();
+    // Reject common false positives: single letters, numbers, very long strings
+    if (candidate.length >= 2 && candidate.length <= 30 && !/^\d/.test(candidate)) {
+      addName(candidate);
+    }
+  }
+  // Also scan cleaned text line-starts (original Step 1 behaviour, kept for safety)
   cleaned.split('\n').forEach(line => {
     const m = line.trim().match(/^([A-Za-z][A-Za-z '.]{0,30}?)\s*:\s*\S/);
     if (m) addName(m[1].trim());
@@ -1838,6 +1894,9 @@ function parseTranscript(raw, interviewer, respondent) {
       });
     }
   });
+
+  // Debug: log parsed turns to console so parser output is inspectable
+  console.log('Parsed turns:', merged.map(t => ({ speaker: t.speaker, preview: t.text.slice(0, 60) })));
 
   return { turns: merged, report };
 }
