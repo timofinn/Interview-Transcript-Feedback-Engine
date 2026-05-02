@@ -585,6 +585,45 @@
     opacity: 0.85;
     letter-spacing: 0.01em;
   }
+
+  /* ─── Tag tooltips ─── */
+  .tag-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .tag-wrap .tag-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: normal;
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.5;
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: normal;
+    width: 200px;
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    pointer-events: none;
+  }
+  .tag-wrap .tag-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1a1a1a;
+  }
+  .tag-wrap:hover .tag-tip { display: block; }
   .hl-emerging {
     background: rgba(255, 230, 120, 0.25);
     border-bottom: 2px dashed #c4a540;
@@ -2145,6 +2184,26 @@ function escapeHtml(str) {
  * Build annotated HTML for an interviewer turn.
  * All pattern matching runs on raw plain text. HTML is injected once.
  */
+// ─────────────────────────────────────────────
+// MOVE TOOLTIP EXPLANATIONS
+// ─────────────────────────────────────────────
+const MOVE_TIPS = {
+  paraphrase:  'You tracked their thoughts well enough to put them back in their own words. That\'s active listening with receipts.',
+  followup:    'You took something they just said and used it to ask a sharper question. That\'s how you show you\'re actually in the conversation.',
+  personal:    'You connected their experience to your own. Rapport doesn\'t just happen — you made it.',
+  emotional:   'You caught the feeling underneath the words. Most interviewers miss that entirely.',
+  encourager:  'You got them to keep going without interrupting or redirecting. Quiet, but effective.',
+  summarizing: 'You brought the thread together and signaled a close. That\'s how you end a conversation, not just stop having one.',
+  memory:      'You asked them to reach for a specific moment, not a general answer. Details live in memories — you went there.',
+  onramp:      'Rather than blindside them with a question out of nowhere, you set it up first. They knew where you were headed.',
+  circling:    'You looped back to something they said earlier. Shows you were paying attention the whole time.',
+  bridge:      'You used their words to open the next topic. Their answer did the work — you just followed it.',
+  pivot:       'You shifted gears without making it awkward. That\'s harder than it looks.',
+  l1:          'A broad, low-stakes opener. Good for warming up — just don\'t stay here too long.',
+  l2:          'You asked for specifics: names, sequences, details. The story lives here.',
+  l3:          'You went after meaning, not just facts. This is where the interview earns it.',
+};
+
 function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMoves) {
   // ── 1. Collect filler spans on raw text ──
   const fillerRanges = [];
@@ -2230,12 +2289,18 @@ function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMove
     if (range.renderType === 'filler') {
       html += `<span class="highlight hl-filler">${matchEscaped}</span>`;
     } else if (range.renderType === 'move') {
-      html += `<span class="highlight hl-${range.key}">${matchEscaped}</span><span class="tag tag-${range.key}">${range.label}</span>`;
+      const tip = MOVE_TIPS[range.key] || '';
+      html += `<span class="highlight hl-${range.key}">${matchEscaped}</span><span class="tag-wrap"><span class="tag tag-${range.key}">${range.label}</span>${tip ? `<span class="tag-tip">${tip}</span>` : ''}</span>`;
     } else if (range.renderType === 'level') {
       const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
       const lLabel = levelLabels[range.level] || `L${range.level}`;
       const followupTag = range.isFollowup ? `<span class="tag tag-followup">Follow-up Question</span>` : '';
-      html += `<span class="highlight hl-l${range.level}">${matchEscaped}</span><span class="tag tag-l${range.level}">${lLabel}</span>${followupTag}`;
+      const levelTip = MOVE_TIPS['l' + range.level] || '';
+      const followupTipStr = range.isFollowup ? (MOVE_TIPS['followup'] || '') : '';
+      const followupTagFull = range.isFollowup
+        ? `<span class="tag-wrap"><span class="tag tag-followup">Follow-up Question</span>${followupTipStr ? `<span class="tag-tip">${followupTipStr}</span>` : ''}</span>`
+        : '';
+      html += `<span class="highlight hl-l${range.level}">${matchEscaped}</span><span class="tag-wrap"><span class="tag tag-l${range.level}">${lLabel}</span>${levelTip ? `<span class="tag-tip">${levelTip}</span>` : ''}</span>${followupTagFull}`;
     }
 
     cursor = range.end;
