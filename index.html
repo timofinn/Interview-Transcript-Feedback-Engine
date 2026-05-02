@@ -802,20 +802,24 @@
   <div class="doc-header">
     <div class="label">Narrative Medicine, Unit 6 &nbsp;|&nbsp; Interview Analyzer</div>
     <h1>Transcript Feedback Engine</h1>
-    <div class="sub">Paste a speaker-labeled transcript below — get immediate scored feedback on listening moves, question arc, talk time, voice, and more.</div>
+    <div class="sub">Paste your transcript — get immediate feedback. We're talking interview maneuvers, question depth, talk time ratio, and verbal filler. Think of it as gauging your ability to both listen and direct conversational traffic.
+<strong>Note:</strong> Don't forget to type the names in the Interviewer and Respondent boxes.</div>
   </div>
 
   <!-- INPUT -->
   <div class="input-section">
     <h2>Paste Your Transcript</h2>
     <div class="format-hint">
-      Format: <code>Name: text</code> — e.g. <code>Kaitlin: How did that feel?</code> or <code>Finn: Yeah, so...</code><br>
-      Any casing works. Speaker names just need to be <strong>consistent</strong> across the transcript. Otter.ai exports paste directly — just replace "Speaker 1 / Speaker 2" with actual names first. Timestamps and <code>[brackets]</code> are stripped automatically.
+      <strong>IMPORTANT: Match This Format As Best You Can.</strong> This thing is <em>helllllla</em> picky about how it parses transcripts. Speaker names just need to be <strong>consistent</strong> across the transcript.
+      <strong>Match the example you see below, or you'll get junk data:</strong><br>
+      <code>Finn: I teach 5 sections of English</code><br>
+      <code>Kaitlin: And how's that been going?</code><br>
+      <code>Finn: You ever try building a plane while flying it at the same time?</code>
     </div>
     <textarea id="transcriptInput" placeholder="Kaitlin: Um, can you tell me a bit about what you do here at school?
 Finn: Sure. So I teach five sections of English...
 Kaitlin: And how has that been going?
-Finn: Really well, actually. I think..."></textarea>
+Finn: You ever try building a plane while flying it at the same time?"></textarea>
     <div class="speaker-row">
       <label>Interviewer name:</label>
       <input type="text" id="interviewerName" placeholder="e.g. KAITLIN" />
