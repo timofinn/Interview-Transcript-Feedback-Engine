@@ -2188,20 +2188,20 @@ function escapeHtml(str) {
 // MOVE TOOLTIP EXPLANATIONS
 // ─────────────────────────────────────────────
 const MOVE_TIPS = {
-  paraphrase:  'You tracked their thoughts well enough to put them back in their own words. That\'s active listening with receipts.',
-  followup:    'You took something they just said and used it to ask a sharper question. That\'s how you show you\'re actually in the conversation.',
-  personal:    'You connected their experience to your own. Rapport doesn\'t just happen — you made it.',
-  emotional:   'You caught the feeling underneath the words. Most interviewers miss that entirely.',
+  paraphrase:  'Why? You tracked their thoughts well enough to articulate them back at them.',
+  followup:    'You took something they just said and used it to ask a sharper question.',
+  personal:    'You connected their experience to your own, building rapport.',
+  emotional:   'Caught the feeling beneath the words.',
   encourager:  'You got them to keep going without interrupting or redirecting. Quiet, but effective.',
-  summarizing: 'You brought the thread together and signaled a close. That\'s how you end a conversation, not just stop having one.',
+  summarizing: 'Wrapped it up with a bow. That\'s how you end a conversation, not just stop having one.',
   memory:      'You asked them to reach for a specific moment, not a general answer. Details live in memories — you went there.',
-  onramp:      'Rather than blindside them with a question out of nowhere, you set it up first. They knew where you were headed.',
-  circling:    'You looped back to something they said earlier. Shows you were paying attention the whole time.',
-  bridge:      'You used their words to open the next topic. Their answer did the work — you just followed it.',
-  pivot:       'You shifted gears without making it awkward. That\'s harder than it looks.',
-  l1:          'A broad, low-stakes opener. Good for warming up — just don\'t stay here too long.',
-  l2:          'You asked for specifics: names, sequences, details. The story lives here.',
-  l3:          'You went after meaning, not just facts. This is where the interview earns it.',
+  onramp:      'Rather than blindside them with a question out of nowhere, you teed them up by contextualizing first.',
+  circling:    'You looped back to an earlier comment, showing you\'ve been tracking the story.',
+  bridge:      'You used their response as a segue to the next topic. Advanced move.',
+  pivot:       'Shifted gears without making it weird. This one takes skill.',
+  l1:          'Easy-breezy, low-stakes opener. Good for warming up. Use them as launching boards.',
+  l2:          'Got them going: recalling specific memories, names, places, details. Often opens a door to L3.',
+  l3:          'Evocative, thought-provoking questions that demand invention or reflection from your respondent.',
 };
 
 function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMoves) {
@@ -2918,17 +2918,28 @@ function analyze() {
   // LEGEND
   // Move definitions with student-voice descriptions and example phrases
   const moveInfo = {
-    paraphrase:  { def: 'Restating what the respondent said in your own words — shows you were actually listening, not just waiting to talk.',          ex: '"So what you\'re saying is…" / "It sounds like you felt…"' },
-    followup:    { def: 'A question that directly uses something the respondent just said. Not a new topic — a dig deeper.',                             ex: '"Wait, what do you mean by that?" / "Can you say more about that?"' },
-    personal:    { def: 'Briefly connecting their experience to your own — builds trust and makes the conversation feel human.',                          ex: '"I feel like I\'ve experienced something similar…" / "That reminds me of when I…"' },
-    emotional:   { def: 'Naming or reflecting back an emotion you noticed in what they said. Makes the respondent feel seen.',                           ex: '"It sounds like that was really frustrating." / "That must have been hard."' },
-    encourager:  { def: 'A short phrase that signals: keep going, I\'m with you. Doesn\'t add content — just opens the door wider.',                   ex: '"Mm-hmm." / "Yeah, for sure." / "Right, right."' },
-    summarizing: { def: 'Wrapping up a section or the whole interview — signals a shift or a close, and shows you tracked the arc of the conversation.', ex: '"So it sounds like overall…" / "Before we wrap up, I just want to recap…"' },
-    memory:      { def: 'Asking for a specific moment, not a general opinion. Pulls concrete stories rather than abstract takes.',                        ex: '"Can you think of a specific time when…?" / "Do you remember the moment you realized…?"' },
-    onramp:      { def: 'Setting up your question before you ask it — giving context for why you\'re asking. Keeps the interview from feeling like an interrogation.', ex: '"I\'ve been thinking about this a lot, and I wanted to ask you about…" / "The reason I\'m bringing this up is…"' },
-    circling:    { def: 'Deliberately returning to something said earlier in the interview. Shows you were tracking everything, not just the last thing.',  ex: '"Going back to what you said earlier about…" / "Earlier you mentioned X — can we dig into that?"' },
-    bridge:      { def: 'Using the respondent\'s answer as a launchpad for your next question — a smooth, connected transition.',                         ex: '"That makes me think of…" / "Since you brought that up…" / "That connects to something I wanted to ask…"' },
-    pivot:       { def: 'Clearly signaling a topic change — honest about the shift instead of just plowing forward.',                                     ex: '"Okay, kind of changing gears here…" / "This is a little different, but…" / "On a different note…"' },
+    paraphrase:  { def: `Tracking their thoughts so well you can articulate them in your own words.`,
+                   ex: `"If I'm hearing you right, you're saying…" / "Wait, so you're saying you…"` },
+    followup:    { def: `A question that directly uses something the respondent just said. Not a new topic — a dig deeper.`,
+                   ex: `"Let's go into that, you said…?" / "When you say [specific word] do you mean…?"` },
+    personal:    { def: `Connecting their world to yours — builds trust and connection.`,
+                   ex: `"I've experienced something similar…" / "That reminds me of my own experience with…"` },
+    emotional:   { def: `Accurate capture of emotional subtext beneath the words.`,
+                   ex: `"Judging by your tone of voice I bet you were…"` },
+    encourager:  { def: `A simple signal for them to carry on, expand, or elaborate — encourages them to build momentum.`,
+                   ex: `"Elaborate on that…" / "Could you go into that a bit more for me?" / "No way, really?"` },
+    summarizing: { def: `Closing gracefully by signaling you tracked the arc of the conversation.`,
+                   ex: `"So it sounds like overall…" / "Before we move on, I just want to make sure I caught it all…"` },
+    memory:      { def: `Calling for a moment or memory that puts them in place to revisit an experience.`,
+                   ex: `"Can you think of a specific time when…?" / "Do you remember the moment you realized…?"` },
+    onramp:      { def: `A contextualizing statement that preps them for your next question. Makes the interview feel less lopsided and more conversational.`,
+                   ex: `"You've raised three healthy children into adulthood… How does being a grandparent compare to being a parent?"` },
+    circling:    { def: `Calling back to an earlier moment in the conversation. Shows you're tracking the arc and connecting what they're saying now to what they said before.`,
+                   ex: `"This is just like earlier when you said…" / "Earlier you mentioned X — let's dig into that before I forget."` },
+    bridge:      { def: `Using the respondent's answer as a launchpad for your next question — a smooth, connected transition.`,
+                   ex: `"Since you brought that up…" / "That actually dovetails beautifully with what I wanted to ask you next…"` },
+    pivot:       { def: `Directs the conversational traffic by being honest about the shift.`,
+                   ex: `"If you're cool with it I wanted to shift over to…" / "Before I forget, do you mind if we jump over to…"` },
   };
 
   const verbalMoves   = MOVE_DEFS.filter(d => d.cat === 'verbal');
@@ -2950,7 +2961,7 @@ function analyze() {
     <div style="grid-column: 1 / -1; padding: 12px 16px; background: #f0f4ff; border-left: 3px solid #4a6fdc; border-radius: 0 4px 4px 0; margin-bottom: 16px;">
       <div style="font-size:8.5pt;font-weight:bold;color:#2a4aaa;margin-bottom:5px;font-family:Arial,sans-serif;letter-spacing:0.04em;">How this tool scores you</div>
       <div style="font-size:8pt;color:#444;line-height:1.6;font-family:Arial,sans-serif;">
-        This tool listens for phrases and patterns that match the techniques you practiced in class. Every time you use language that fits one of these moves, it gets flagged, highlighted, and counted toward your score. It\'s not judging your ideas — it\'s tracking your technique. The more intentional your language, the more it picks up. Think of it less like a grader and more like a mirror: it shows you where your moves landed.
+        First off, I coded this, so it's got bugs. But here's the intent anyway: to make a tool that scans for bits and phrases that broadly match linguistic patterns related to interviewing techniques covered in class. Ideally, every time you make one of these maneuvers in a conversation, it gets flagged, highlighted, and counted toward your score. It's not evaluating your ideas or the content whatsoever — it's tracking your ability to demonstrate a variety of listening techniques, your ability to drive the arc of the conversation from L1 style ice breakers down to L3 meaning makers, and of course how many times you say uh, um, like, you know, sorta, kinda, etc.
       </div>
     </div>
     <div class="legend-col">
