@@ -855,7 +855,7 @@ Finn: You ever try building a plane while flying it at the same time?"></textare
 
     <!-- LEGEND -->
     <div class="legend-section" id="legendSection">
-      <h2>Color-Coded Legend — Listening &amp; Structural Moves</h2>
+      <h2>Color-Coded Legend — Listening Moves &amp; Conversation Control</h2>
       <div class="legend-grid" id="legendGrid"></div>
     </div>
 
@@ -926,7 +926,7 @@ Finn: You ever try building a plane while flying it at the same time?"></textare
     <!-- FOOTER -->
     <div class="doc-footer">
       <strong>Narrative Medicine, Unit 6 — Interview Analyzer</strong><br>
-      Analysis is pattern-based and should be reviewed with your teacher. Question-level classification (L1–L3) is a starting point for conversation, not a verdict. Move taxonomy follows the Verbal &amp; Structural Cues reference sheet: verbal moves (Paraphrasis, Follow-up, Personal Connection, Reflection/Naming, Nudge of Encouragement, Summarizing, Asking for Specific Memory) and structural moves (On-Ramp, Circling Back, Smooth Bridge, Skilled Pivot). Filler words are marked with a dotted underline.
+      Analysis is pattern-based and should be reviewed with your teacher. Question-level classification (L1–L3) is a starting point for conversation, not a verdict. Move taxonomy: Listening Moves (Paraphrase, Follow-Up, Personal Connection, Subtext Spotted, Nudge, Memory Elicited) and Conversation Control (On-Ramp, Circle Back, Bridge, Pivot, The Closer). Filler words are marked with a dotted underline.
     </div>
 
   </div><!-- /results -->
@@ -941,7 +941,7 @@ Finn: You ever try building a plane while flying it at the same time?"></textare
 const FILLERS = ['um','uh','like','you know what i mean','you know','i mean','sort of','kind of','basically','literally','right','okay','so','well','anyway'];
 
 const MOVE_DEFS = [
-  { key:'paraphrase',  label:'Paraphrasis',           color:'#fde68a', cat:'verbal',     patterns:[
+  { key:'paraphrase',  label:'Paraphrase',             color:'#fde68a', cat:'verbal',     patterns:[
     /\bif i'?m hearing you\b/i,/\bso what you'?re saying\b/i,/\bso you'?re saying\b/i,/\bin other words\b/i,
     /\bam i right about that\b/i,/\blet me get this right\b/i,/\byou'?re telling me\b/i,
     // "sounds like" alone is too broad — scoped version below; raw form removed to prevent false positives
@@ -988,7 +988,7 @@ const MOVE_DEFS = [
     // "What I'm hearing is X" — first-person synthesis without hedge (distinct from "kinda" variant)
     /\bwhat i'?m hearing is (that |a sense|an? |the )\b/i,
   ] },
-  { key:'followup',    label:'Follow-up Question',   color:'#bbf7d0', cat:'verbal',     patterns:[
+  { key:'followup',    label:'Follow-Up',              color:'#bbf7d0', cat:'verbal',     patterns:[
     /\byou said (it was|that|he|she|they|it|this)\b/i,
     /\bwhat (was that|made it) (actually |really )?(like|so|hard|stressful|difficult|scary|tough)\b/i,
     /\bhow did you (deal with|handle|get through|manage) that\b/i,
@@ -1043,7 +1043,7 @@ const MOVE_DEFS = [
     // "I get that, I've experienced that" — compressed double affirmation
     /\bi (get|understand|know) that[,.]? i'?ve (experienced|felt|been through|had) (that|something like that)\b/i,
   ] },
-  { key:'emotional',   label:'Reflection / Naming',  color:'#e9d5ff', cat:'verbal',     patterns:[
+  { key:'emotional',   label:'Subtext Spotted',        color:'#e9d5ff', cat:'verbal',     patterns:[
     /\bhow did that (feel|make you)\b/i,/\bwhat was that like\b/i,
     /\bthat (sounds|seems) (hard|difficult|tough|exciting|scary|frustrating|isolating|lonely)\b/i,
     /\bhow does that make you feel\b/i,/\bthat (must have been|sounds like it was)\b/i,
@@ -1096,7 +1096,7 @@ const MOVE_DEFS = [
     // Precise: position + state noun (not generic "at a point where")
     /\byou'?re (at|in|between) (a )?(crossroads|transition|turning point|inflection point|threshold|in-between( place)?|liminal (space|moment)|two (chapters|phases|versions)|a new chapter)\b/i,
   ] },
-  { key:'encourager',  label:'Nudge of Encouragement', color:'#bfdbfe', cat:'verbal',   patterns:[
+  { key:'encourager',  label:'Nudge',                  color:'#bfdbfe', cat:'verbal',   patterns:[
     // Standalone minimal cues — must be the whole/near-whole turn (^ anchor prevents false positives)
     /^(yeah\.?|mm-?hmm\.?|uh-?huh\.?|right\.?|sure\.?|okay\.?|yep\.?|mmm\.?|got it\.?|i see\.?|shoot\.?)[.!?…]*$/i,
     /^(yeah|right|mm-?hmm|okay|uh-?huh)[\s,]+(yeah|right|mm-?hmm|okay|uh-?huh)[.!?…]*$/i,
@@ -1113,7 +1113,7 @@ const MOVE_DEFS = [
     // "I see, go on" — acknowledgment + continuation
     /^(i see|got it|right)[,.]?\s+(go on|keep going|say more|tell me more)[.!]?$/i,
   ] },
-  { key:'summarizing', label:'Summarizing / Closing', color:'#fed7aa', cat:'verbal',    patterns:[
+  { key:'summarizing', label:'The Closer',             color:'#fed7aa', cat:'structural', patterns:[
     /\bso to summarize\b/i,/\bjust to recap\b/i,/\bthose are all (my|the) questions\b/i,
     /\bthat'?s all (i have|the questions)\b/i,/\bthank you (so much|for your time)\b/i,
     /\banything i haven'?t asked\b/i,/\bunless you'?d like to say more\b/i,
@@ -1159,7 +1159,7 @@ const MOVE_DEFS = [
     /\bi (had|have) (a |had a )?guiding question\b/i,/\bthis was one of my (final|last|main|guiding) questions?\b/i,
     /\bthe (whole |entire |main )?purpose of (this |the )?interview\b/i,/\bbefore i (do go|wrap up|finish|end)\b/i,
   ] },
-  { key:'circling',    label:'Circling Back',          color:'#fce7f3', cat:'structural', patterns:[
+  { key:'circling',    label:'Circle Back',             color:'#fce7f3', cat:'structural', patterns:[
     /\byou mentioned (earlier|before|that)\b/i,/\bgoing back to\b/i,
     /\bearlier you (said|mentioned|talked about)\b/i,/\bwe talked about\b/i,
     /\bcan we go back to\b/i,/\bi want to (come back|go back) to\b/i,
@@ -1228,7 +1228,7 @@ const MOVE_DEFS = [
       /\bback\s+to\s+that\b/i,
     ],
   } },
-  { key:'bridge',      label:'Smooth Bridge',          color:'#d1fae5', cat:'structural', patterns:[
+  { key:'bridge',      label:'Bridge',                 color:'#d1fae5', cat:'structural', patterns:[
     /\bbut first\b/i,/\bbefore (we|i) (move|get|go) (on|to)\b/i,
     /\byou mentioned.*--- i want to come back\b/i,/\bspeaking of\b/i,
     /\bthat actually reminds me\b/i,/\bthat connects to\b/i,
@@ -1295,7 +1295,7 @@ const MOVE_DEFS = [
       /\band\s+then\b/i,
     ],
   } },
-  { key:'pivot',       label:'Skilled Pivot',          color:'#fef3c7', cat:'structural', patterns:[
+  { key:'pivot',       label:'Pivot',                  color:'#fef3c7', cat:'structural', patterns:[
     /\bi want to shift\b/i,/\blet'?s (move|shift|turn) to\b/i,/\bchanging gears\b/i,/\bon a different note\b/i,
     /\bthis is (kind of |sort of )?a different (question|topic)\b/i,/\bi'?m (gonna|going to) switch topics\b/i,
     /\bmoving away from that\b/i,/\bthis is (sort of |kind of )?unrelated,? but\b/i,
@@ -1348,7 +1348,7 @@ const MOVE_DEFS = [
       /\balright[,.]?\s*(so|let'?s)?\b/i,
     ],
   } },
-  { key:'memory',      label:'Asking for Specific Memory', color:'#ddd6fe', cat:'verbal', patterns:[
+  { key:'memory',      label:'Memory Elicited',         color:'#ddd6fe', cat:'verbal',  patterns:[
     /\bis there a (moment|time|specific|particular)\b/i,/\bcan you think of a time\b/i,
     /\bdo you remember (when|a time|exactly when|the (moment|day|time))\b/i,
     /\btell me about a (specific|particular|time)\b/i,/\bwhat('s| is) a (specific|particular)\b/i,
@@ -1383,12 +1383,12 @@ const MOVE_DEFS = [
 
 const EMERGING_DEFS = [
 
-  // ── 1. Emerging Paraphrasis ──
+  // ── 1. Emerging Paraphrase ──
   // Loose restatement or gestural reference to what the respondent said.
   // Requires *reference to the respondent's prior speech*, not just filler.
   {
     key: 'em_paraphrase',
-    label: 'Emerging Paraphrasis',
+    label: 'Emerging Paraphrase',
     confidence: 'low',
     parentKey: 'paraphrase',
     patterns: [
@@ -1412,12 +1412,12 @@ const EMERGING_DEFS = [
     // Do NOT fire if: only "like" alone, single word repeat, no respondent reference
   },
 
-  // ── 2. Emerging Reflection / Naming ──
+  // ── 2. Emerging Subtext Spotted ──
   // Naming the respondent's tone, feeling, attitude, or significance in simple language.
   // Should NOT fire on generic praise only ("that's nice", "cool", "that's good").
   {
     key: 'em_emotional',
-    label: 'Emerging Reflection',
+    label: 'Emerging Subtext Spotted',
     confidence: 'low',
     parentKey: 'emotional',
     patterns: [
@@ -1439,7 +1439,7 @@ const EMERGING_DEFS = [
     exclusion: /^(that'?s (nice|good|great|cool|fine|awesome|interesting)|nice|cool|good|yeah nice|wow|that'?s beautiful)[.!,]?$/i,
   },
 
-  // ── 3. Emerging Smooth Bridge ──
+  // ── 3. Emerging Bridge ──
   // Using a prior response to launch the next question, but without polished phrasing.
   // ONLY fire when connected to a *new question* (text contains "?") or a clear topic shift.
   {
@@ -1485,7 +1485,7 @@ const EMERGING_DEFS = [
     ],
   },
 
-  // ── 5. Messy Follow-Up Question ──
+  // ── 5. Emerging Follow-Up ──
   // Repeated, fragmented, filler-heavy follow-ups that still clearly build on prior answer.
   // Only fire if text contains "?" — this must be question-shaped.
   {
@@ -2192,20 +2192,20 @@ function escapeHtml(str) {
 // MOVE TOOLTIP EXPLANATIONS
 // ─────────────────────────────────────────────
 const MOVE_TIPS = {
-  paraphrase:  'Why? You tracked their thoughts well enough to articulate them back at them.',
-  followup:    'You took something they just said and used it to ask a sharper question.',
-  personal:    'You connected their experience to your own, building rapport.',
-  emotional:   'Caught the feeling beneath the words.',
-  encourager:  'You got them to keep going without interrupting or redirecting. Quiet, but effective.',
-  summarizing: 'Wrapped it up with a bow. That\'s how you end a conversation, not just stop having one.',
-  memory:      'You asked them to reach for a specific moment, not a general answer. Details live in memories — you went there.',
-  onramp:      'Rather than blindside them with a question out of nowhere, you teed them up by contextualizing first.',
-  circling:    'You looped back to an earlier comment, showing you\'ve been tracking the story.',
-  bridge:      'You used their response as a segue to the next topic. Advanced move.',
-  pivot:       'Shifted gears without making it weird. This one takes skill.',
+  paraphrase:  'You restated their idea in your own words — showing you were tracking, not just waiting for your turn.',
+  followup:    'This question built directly from something they just said. You stayed in the conversation instead of jumping to your next topic.',
+  personal:    'You briefly connected their experience to your own. Builds trust without taking over the room.',
+  emotional:   'You named something implied beneath the words — a feeling, tension, or value they didn\'t say out loud. That\'s subtext work.',
+  encourager:  'Short and clean — you signaled "keep going" without interrupting or redirecting.',
+  summarizing: 'You signaled that the arc has been tracked and the conversation is landing gracefully. That\'s The Closer.',
+  memory:      'You invited them back to a specific moment or scene, not a general answer. Details live in memories — you went there.',
+  onramp:      'You set context before your question so they knew where you were taking them — less interrogation, more conversation.',
+  circling:    'You returned to something said earlier, showing you\'ve been keeping track of the whole story.',
+  bridge:      'You used their last answer as the connector to your next topic. Clean, linked move.',
+  pivot:       'You changed direction honestly — flagged the shift instead of pretending it wasn\'t happening.',
   l1:          'Easy-breezy, low-stakes opener. Good for warming up. Use them as launching boards.',
   l2:          'Got them going: recalling specific memories, names, places, details. Often opens a door to L3.',
-  l3:          'Evocative, thought-provoking questions that demand invention or reflection from your respondent.',
+  l3:          'Pushed past the story into meaning — what it taught them, how they changed, why it mattered.',
 };
 
 function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMoves) {
@@ -2298,7 +2298,7 @@ function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMove
     } else if (range.renderType === 'level') {
       const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
       const lLabel = levelLabels[range.level] || `L${range.level}`;
-      const followupTag = range.isFollowup ? `<span class="tag tag-followup">Follow-up Question</span>` : '';
+      const followupTag = range.isFollowup ? `<span class="tag tag-followup">Follow-Up</span>` : '';
       const levelTip = MOVE_TIPS['l' + range.level] || '';
       const followupTipStr = range.isFollowup ? (MOVE_TIPS['followup'] || '') : '';
       const followupTagFull = range.isFollowup
@@ -2657,9 +2657,9 @@ function analyze() {
         : '');
 
   document.getElementById('moveSummaryGrid').innerHTML = `
-    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:6px;grid-column:1/-1;">Verbal Moves</div>
+    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:6px;grid-column:1/-1;">Listening Moves</div>
     ${verbHtml || '<div style="color:#ccc;font-style:italic;font-size:8.5pt">None detected</div>'}
-    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-top:10px;margin-bottom:6px;grid-column:1/-1;">Structural Moves</div>
+    <div style="font-family:Arial,sans-serif;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-top:10px;margin-bottom:6px;grid-column:1/-1;">Conversation Control</div>
     ${structNoneHtml}
   `;
   const moveStanding = totalMoves >= 15 ? { label: 'Exceeds Standard', color: '#2a7a40', mark: '✓' }
@@ -2811,7 +2811,7 @@ function analyze() {
   }
 
   const scoreItems = [
-    { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used. More variety = higher score.',   metric:'listening' },
+    { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used across both Listening Moves and Conversation Control. More variety = higher score.',   metric:'listening' },
     { label:'Question Quality', score: scores.qScore,         tip: 'Weighted by level. L2 counts once, L3 counts 1.5×.',                   metric:'quality'   },
     { label:'Arc / Structure',  score: scores.arcScore,       tip: 'Did question levels build? Compares avg level in first vs. last third.', metric:'arc'      },
     { label:'Talk Balance',     score: scores.balanceScore,   tip: 'Ideal: respondent speaks 55–80%. Score drops if you dominate.',          metric:'balance'  },
@@ -2922,28 +2922,28 @@ function analyze() {
   // LEGEND
   // Move definitions with student-voice descriptions and example phrases
   const moveInfo = {
-    paraphrase:  { def: `Tracking their thoughts so well you can articulate them in your own words.`,
-                   ex: `"If I'm hearing you right, you're saying…" / "Wait, so you're saying you…"` },
-    followup:    { def: `A question that directly uses something the respondent just said. Not a new topic — a dig deeper.`,
-                   ex: `"Let's go into that, you said…?" / "When you say [specific word] do you mean…?"` },
-    personal:    { def: `Connecting their world to yours — builds trust and connection.`,
-                   ex: `"I've experienced something similar…" / "That reminds me of my own experience with…"` },
-    emotional:   { def: `Accurate capture of emotional subtext beneath the words.`,
-                   ex: `"Judging by your tone of voice I bet you were…"` },
-    encourager:  { def: `A simple signal for them to carry on, expand, or elaborate — encourages them to build momentum.`,
-                   ex: `"Elaborate on that…" / "Could you go into that a bit more for me?" / "No way, really?"` },
-    summarizing: { def: `Closing gracefully by signaling you tracked the arc of the conversation.`,
-                   ex: `"So it sounds like overall…" / "Before we move on, I just want to make sure I caught it all…"` },
-    memory:      { def: `Calling for a moment or memory that puts them in place to revisit an experience.`,
-                   ex: `"Can you think of a specific time when…?" / "Do you remember the moment you realized…?"` },
-    onramp:      { def: `A contextualizing statement that preps them for your next question. Makes the interview feel less lopsided and more conversational.`,
-                   ex: `"You've raised three healthy children into adulthood… How does being a grandparent compare to being a parent?"` },
-    circling:    { def: `Calling back to an earlier moment in the conversation. Shows you're tracking the arc and connecting what they're saying now to what they said before.`,
-                   ex: `"This is just like earlier when you said…" / "Earlier you mentioned X — let's dig into that before I forget."` },
-    bridge:      { def: `Using the respondent's answer as a launchpad for your next question — a smooth, connected transition.`,
-                   ex: `"Since you brought that up…" / "That actually dovetails beautifully with what I wanted to ask you next…"` },
-    pivot:       { def: `Directs the conversational traffic by being honest about the shift.`,
-                   ex: `"If you're cool with it I wanted to shift over to…" / "Before I forget, do you mind if we jump over to…"` },
+    paraphrase:  { def: `Restating what the respondent said in your own words — not quoting, but translating. Proves you were actually listening.`,
+                   ex: `"If I'm hearing you right, you're saying…" / "So it's less about X and more about Y?"` },
+    followup:    { def: `A question that builds directly from something the respondent just said. Not a new topic — a drill-down into what's already on the table.`,
+                   ex: `"You said 'stuck' — what did that feel like?" / "When you say 'hard,' what do you mean exactly?"` },
+    personal:    { def: `Briefly connecting their experience to your own — enough to build rapport, not enough to take over the conversation.`,
+                   ex: `"I've experienced something similar…" / "That actually reminds me of something that happened to me."` },
+    emotional:   { def: `Naming a feeling, value, tension, or meaning that's implied beneath the words — not what they said, but what might be underneath it.`,
+                   ex: `"It sounds like that was more isolating than frustrating." / "I wonder if part of you was relieved."` },
+    encourager:  { def: `Short prompts that keep the respondent talking without redirecting or interrupting — quiet but effective.`,
+                   ex: `"Go on." / "What else?" / "Tell me more." / "Could you say more about that?"` },
+    summarizing: { def: `Gracefully ending a section or the interview by signaling you've tracked the arc. The Closer lands the conversation.`,
+                   ex: `"Before we wrap up…" / "So overall, it sounds like…" / "That feels like a good place to end."` },
+    memory:      { def: `Inviting the respondent to return to a specific moment, scene, or memory — not a general answer, but a particular experience.`,
+                   ex: `"Do you remember the moment when…?" / "Where were you when that happened?" / "Can you walk me through that day?"` },
+    onramp:      { def: `Setting context before your question — a setup move that tells the respondent where you're taking them before you ask.`,
+                   ex: `"You've raised three kids into adulthood… How does grandparenting compare?" / "Knowing what you said earlier about X, I'm curious…"` },
+    circling:    { def: `Returning to an earlier moment, phrase, or unresolved idea from the conversation — shows you've been keeping track.`,
+                   ex: `"Earlier you mentioned X — I want to come back to that." / "Going back to what you said about…"` },
+    bridge:      { def: `Moving from one topic to the next by using something the respondent just said as the connector — a linked, not dropped, shift.`,
+                   ex: `"Since you brought that up…" / "That actually connects to something I wanted to ask about…"` },
+    pivot:       { def: `Changing direction honestly and cleanly — flagging the shift rather than pretending it isn't happening.`,
+                   ex: `"Changing gears a bit…" / "This is kind of a different direction, but…" / "I want to shift to something else."` },
   };
 
   const verbalMoves   = MOVE_DEFS.filter(d => d.cat === 'verbal');
@@ -2969,13 +2969,15 @@ function analyze() {
       </div>
     </div>
     <div class="legend-col">
-      <div class="legend-col-header">Verbal Moves</div>
+      <div class="legend-col-header">Listening Moves</div>
+      <div style="font-family:Arial,sans-serif;font-size:7.5pt;color:#777;font-style:italic;margin-bottom:10px;line-height:1.45;">Specific things you say to show you are tracking, understanding, and deepening what the other person said.</div>
       <div style="display:flex;flex-direction:column;">
         ${verbalMoves.map(buildMoveItem).join('')}
       </div>
     </div>
     <div class="legend-col">
-      <div class="legend-col-header">Structural Moves</div>
+      <div class="legend-col-header">Conversation Control</div>
+      <div style="font-family:Arial,sans-serif;font-size:7.5pt;color:#777;font-style:italic;margin-bottom:10px;line-height:1.45;">Moves that steer the interview: where it goes, how it shifts, and how cleanly it lands.</div>
       <div style="display:flex;flex-direction:column;">
         ${structMoves.map(buildMoveItem).join('')}
       </div>
@@ -3083,10 +3085,10 @@ function analyze() {
           coachingLines.push('You gestured toward paraphrasing — phrases like "because you were talking about..." or "from what you were saying..." are the right instinct. Sharpen those into a full restatement before asking the next question. Try: "So what I\'m hearing is..."');
         }
         if ((emergingTotals.em_emotional||0) > 0) {
-          coachingLines.push('You named tone and attitude — "you speak so highly of it" or "you seemed really passionate" are solid observations. To make these land as full Reflection/Naming moves, tie the feeling to what it means: "It sounds like that community was more than just a place — it was a sense of home."');
+          coachingLines.push('You picked up on tone and attitude — "you speak so highly of it" or "you seemed really passionate" are solid observations. To make these land as full Subtext Spotted moves, tie the observation to what\'s underneath: "It sounds like that community was more than just a place — it was a sense of home."');
         }
         if ((emergingTotals.em_bridge||0) > 0) {
-          coachingLines.push('You used the previous answer to launch your next question — that\'s the core of a Smooth Bridge. To polish it, name the connection explicitly: "Since you mentioned X, I want to ask about..." instead of jumping in with "because you were talking about..."');
+          coachingLines.push('You used the previous answer to launch your next question — that\'s the core of a Bridge. To polish it, name the connection explicitly: "Since you mentioned X, I want to ask about..." instead of jumping in with "because you were talking about..."');
         }
         if ((emergingTotals.em_contrast||0) > 0) {
           coachingLines.push('You framed contrast well — "going from that to something new" or "from there to here" is strong structural thinking. A contrast frame paired with a specific question can unlock real depth.');
