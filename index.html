@@ -2116,7 +2116,7 @@ function computeScores(turns, interviewer, respondent, moves, levels, fillerTota
   const l3count = levels.filter(l => l === 3).length;
   const l2count = levels.filter(l => l === 2).length;
   const totalQ  = levels.length;
-  const qScore  = totalQ > 0 ? Math.min(5, Math.round(((l2count + l3count*1.5) / totalQ) * 5)) : 1;
+  const qScore  = l3count >= 3 ? 5 : l3count === 2 ? 4 : l3count === 1 ? 3 : l2count > 0 ? 2 : 1;
   let arcScore = 3;
   if (levels.length >= 3) {
     const firstThird = levels.slice(0, Math.ceil(levels.length/3));
@@ -2782,11 +2782,11 @@ function analyze() {
                        return { cls:'fb-low',  text:`Just 1 move type used throughout. Vary your tools — one move won't carry a whole interview.` };
     }
     if (metric === 'quality') {
-      if (score === 5) return { cls:'fb-good', text:`Strong question depth: ${l3count} L3 and ${l2count} L2 out of ${totalQ} total. You went somewhere real.` };
-      if (score === 4) return { cls:'fb-good', text:`Good mix of question levels. ${l3count > 0 ? `${l3count} L3 question${l3count > 1 ? 's' : ''} landed.` : 'Try pushing one question to L3 next time.'}` };
-      if (score === 3) return { cls:'fb-ok',   text:`Mostly L1–L2 questions (${l1count} L1, ${l2count} L2, ${l3count} L3). Getting there — push for more depth.` };
-      if (score === 2) return { cls:'fb-low',  text:`Heavy on L1 questions (${l1count} of ${totalQ}). Surface-level questions get surface-level answers.` };
-                       return { cls:'fb-low',  text:`Almost entirely L1 (${l1count} of ${totalQ} questions). Start asking why, not just what.` };
+      if (score === 5) return { cls:'fb-good', text:`Strong depth: ${l3count} L3 question${l3count > 1 ? 's' : ''} asked. You went somewhere real.` };
+      if (score === 4) return { cls:'fb-good', text:`Solid depth — 2 L3 questions landed. One more and you're cooking.` };
+      if (score === 3) return { cls:'fb-ok',   text:`Got one L3 question in (${l2count} L2 as well). Push for 2–3 next time.` };
+      if (score === 2) return { cls:'fb-low',  text:`Stayed at L1–L2 (${l2count} L2 question${l2count !== 1 ? 's' : ''}, no L3). Try one "why does this matter to you" moment.` };
+                       return { cls:'fb-low',  text:`All L1 questions. Surface questions get surface answers — push for why, not just what.` };
     }
     if (metric === 'arc') {
       if (score === 5) return { cls:'fb-good', text:`Your questions built well — question depth increased meaningfully from start to finish.` };
@@ -2813,7 +2813,7 @@ function analyze() {
 
   const scoreItems = [
     { label:'Listening Moves',  score: scores.listeningScore, tip: 'How many distinct move types you used. More variety = higher score.',   metric:'listening' },
-    { label:'Question Quality', score: scores.qScore,         tip: 'Weighted by level. L2 counts once, L3 counts 1.5×.',                   metric:'quality'   },
+    { label:'Question Quality', score: scores.qScore,         tip: 'Based on L3 count: 3+ = 5pts, 2 = 4pts, 1 = 3pts, L2s only = 2pts, none = 1pt.',                   metric:'quality'   },
     { label:'Arc / Structure',  score: scores.arcScore,       tip: 'Did question levels build? Compares avg level in first vs. last third.', metric:'arc'      },
     { label:'Talk Balance',     score: scores.balanceScore,   tip: 'Ideal: respondent speaks 55–80%. Score drops if you dominate.',          metric:'balance'  },
     { label:'Filler Control',   score: scores.fillerScore,    tip: 'Interviewer filler rate only. Under 5% = 5/5. Lose a point every 5%.',  metric:'filler'   },
