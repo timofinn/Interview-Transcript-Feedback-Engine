@@ -1517,117 +1517,151 @@ const EMERGING_DEFS = [
 function classifyQuestionLevel(q) {
   const t = q.toLowerCase();
 
-  // L3 — Unlock the Meaning
-  // Requires the respondent to INVENT, REFLECT, or SYNTHESIZE.
-  // The test: could they answer from memory alone, or do they have to construct something?
-  // Signals: hypotheticals, self-analysis, evaluation of meaning, prediction, advice-giving,
-  // imagining a different version of themselves or the world, assessing significance.
-  const l3patterns = [
-    // Hypotheticals / invention
-    /what would you (say|tell|do|give|recommend|advise) (to |if |someone)/,
-    /if you (were|could|had to) .{0,40}\?/,
-    /what would (that|it) (look|feel|mean) like (for you)?\?/,
-    /what do you (imagine|picture|envision|foresee)/,
-    /if you (could|had) (do it again|another chance|one thing|one piece)/,
-    // Internal process — "walk me through your thoughts/feelings" = L3 (not external sequence)
-    /walk me through (your (thoughts|feelings|fears|mind|head|emotions|reasoning|why))/,
-    // Hypotheticals — "I'm wondering if you could go back" variants
-    /i'?m wondering if you could (go back|change|do|tell)/,
-    /if you could go back .{0,80}/,
-    // Self-analysis / psychological reflection
-    /what (do you think it is|is it) about (your|you|yourself)/,
-    /what (is it|do you think) about (your|you) (temperament|personality|character|nature|upbringing|mindset)/,
-    /why (do you think|is it that) you/,
-    /what (drives|pulls|draws|pushes|compels|motivates) you/,
-    /what does that (say|reveal|tell us) about (you|yourself)/,
-    /how (do you make sense of|do you understand|would you explain) (that|yourself|your)/,
-    // Internal emotional / mental state (external event → internal experience = L3)
-    /how did (that|it|this|being|having|becoming|losing) .{0,40} affect you (mentally|emotionally|personally|inside|as a person)/,
-    /how did (that|it|this) affect you/,
-    /were you (struggling|dealing|coping|managing) (mentally|emotionally|inside|with)/,
-    // Fears / internal experience
-    /what were (your|the) (biggest|main|greatest|worst|deepest) fears/,
-    /what (scared|frightened|worried|concerned) you (most|the most|about)/,
-    // Self-revelation / personal change (events → who you became)
-    /what did (having|being|becoming|raising|losing|going through) .{0,40} teach you about yourself/,
-    /what did (that|it|this|having|being|becoming) .{0,40} teach you/,
-    /how did (that|it|this|being|having|becoming) .{0,50} change you/,
-    /how (has|have) (that|it|this|being|having|becoming) .{0,50} changed you/,
-    /how are you (different|changed) (now|today|since|because)/,
-    /who were you (before|after|without)/,
-    // Evaluative / meaning-making
-    /to what extent/,
-    /how (significant|important|meaningful|valuable|consequential) (is|was|do you think)/,
-    /do you think (people|others|everyone|society|we) (are|is|should|could|would)/,
-    /how do you think .{0,50} (will|would|could|might) (help|change|affect|shape)/,
-    /what do you think (this|that|it|the|your) .{0,30}(means|says|reveals|shows)/,
-    // Defining self / personal meaning
-    /what (is|does) (motherhood|fatherhood|parenthood|that experience|that moment|that choice|that relationship) (mean|look like) (to you|for you)/,
-    /how would you define .{0,40} (to yourself|for yourself|now|in your own words)/,
-    // Confidence / forecasting / possibility
-    /how confident are you/,
-    /do you (think|believe|feel) you.{0,30} (will|would|can|could) (find|get|figure|make)/,
-    /do you (feel|think|believe) (like )?that'?s something you (still )?need/,
-    // Purpose / significance
-    /what did (that|this|it) (mean|teach|show|reveal)/,
-    /why did (that|it|this) (stick|matter|affect)/,
-    /how (has|have|did) (that|this|it) (changed|shaped|affected|influenced)/,
-    /what do you wish/,/looking back/,/in retrospect/,
-    /what matters (most|to you)/,
-    /what (have you|did you) (learned|taken away|realized)/,
-    /what would you (carry|keep|change|do differently|have done)/,
-    // Advice-giving (pure invention — they must construct an answer for someone else)
-    /what would you (say|tell) (to )?(someone|a person|anyone|people|them|him|her)/,
-    /what (advice|message|words) would you (give|offer|have)/,
-    /if (someone|a person|anyone) (came to you|asked you|felt|was)/,
-  ];
+  // ── LEVEL 3 — Meaning-Making / Self-Evaluative ──────────────────────────
+  // The respondent steps OUTSIDE the story's timeline and looks back as the
+  // narrator/author of their own life. They are not recalling or analyzing
+  // a specific event — they are evaluating its impact on their soul, identity,
+  // or worldview. Key signal: "metacognition" — thinking about their own thinking.
+  //
+  // Auto-bump rules:
+  //   1. Temporal bridge words: now, looking back, since then, in retrospect,
+  //      with hindsight, nowadays, at this point — signal the narrator seat.
+  //   2. Universalizing nouns: wisdom, meaning, humanity, purpose, legacy,
+  //      identity, truth — signal meaning beyond the specific event.
+  //   3. "Why is [value] important to you?" — probes identity, not event logic.
+  //   4. "What did you learn?" — benefit-of-the-doubt bump (implies wisdom shift).
+  //   5. Advice-giving: constructing guidance for someone else = pure invention.
 
-  // L2 — Gather Details
-  // Requires recall of specifics: sequence, names, facts, examples, processes.
-  // The respondent reaches into memory for concrete information.
-  // NOTE: "walk me through your thoughts/feelings/fears" is L3 — caught above. Only external-sequence
-  // "walk me through" falls to L2 here.
-  const l2patterns = [
-    /walk me through (the|your (process|steps|what happened|how you|that day|that moment|that time|it))/,/what happened (first|next|then|after)/,/who was (there|involved)/,
-    /how (long|many|often|much)/,/can you (be more specific|give me an example|describe)/,
-    /what (specifically|exactly)/,/tell me more about/,
-    /what did (you|they|he|she) (do|say|decide)/,
-    /how did (it|that|you|they) (work|start|end|begin|happen)/,
-    /what (was|were) (the|your) (process|steps|plan|approach)/,
-    /how has (it|that|being) .{0,30}\?/,
-    /what (does|did) (your|the) (day|week|role|work|schedule)/,
-    /do (we|you) have that many/,
-    /was there a specific/,/do you remember (a time|when|the)/,
-    /can you (think of|point to|name) a/,
-    /what (kind of|sorts? of|types? of)/,/how (would you|do you) describe/,
-    /is (this|that|it) (an attempt|a way|related|connected)/,
-    /do you (feel|think|believe) (like )?that'?s (still )?unclear/,
-  ];
+  // Temporal bridge — respondent must look back from present seat
+  if (/\b(looking back|in retrospect|with (the benefit of )?hindsight|now that (you|it|that)|since (then|that|all|this)|nowadays|at this point in (your life|time)|from where you (are|stand) now|in the rearview)\b/.test(t)) return 3;
 
-  // L1 — Open the Door
-  // Safe, broad, tone-setting. Respondent can answer with general self-description.
-  const l1patterns = [
-    /what do you do/,/tell me about (yourself|your)/,
-    /how (are|is|was) (things|it|everything|school|work|life)/,
-    /what('s| is) (your|a typical|life|it) like/,
-    /what (brings|got) you (here|to|into)/,
-    /can you (start by|begin by|introduce)/,/who are you/,
-    /like what does your life look like/,/both in and outside/,/introducing yourself/,
-    /do you want to (talk about|introduce|share|tell me)/,
-  ];
+  // Universalizing nouns — signal meaning beyond the specific event
+  if (/\b(wisdom|meaning|humanity|purpose|legacy|identity|your (truth|soul|worldview|outlook|perspective on life)|the bigger picture|universal|what it means to be)\b/.test(t)) return 3;
 
-  for (const p of l3patterns) if (p.test(t)) return 3;
-  for (const p of l2patterns) if (p.test(t)) return 2;
-  for (const p of l1patterns) if (p.test(t)) return 1;
+  // "Why is [X] important/meaningful to you?" — identity probe, not event analysis
+  if (/why (is|are|was|were) .{0,50} (important|meaningful|significant|special|sacred|valuable) (to|for) you\b/.test(t)) return 3;
 
-  // Fallback for questions not matched above
+  // "What does [X] mean to you?" — meaning-making, not factual recall
+  if (/what does .{0,60} mean (to|for) you\b/.test(t)) return 3;
+
+  // Learning/wisdom — benefit-of-the-doubt bump (transcends the event)
+  if (/what (have you |did you |would you say you )?(learned|taken away|realized|come to understand|come to believe|come to see) (from|about|through|in|since)/.test(t)) return 3;
+  if (/what (has|have) (that|this|it|all (of )?this|going through (that|this|it)) taught you/.test(t)) return 3;
+
+  // Metacognition — thinking about their own thinking/being
+  if (/what does that (say|reveal|tell (us|me|you)) about (who you are|you|yourself|your character|your values)/.test(t)) return 3;
+  if (/who (are|were) you (now|before|after|without|because of|as a result of)/.test(t)) return 3;
+  if (/how (are|have) you (changed|grown|shifted|evolved|become different) (since|because|from|after|through)/.test(t)) return 3;
+  if (/how (has|have) (that|this|it|all of this) (changed|shaped|defined|redefined|transformed) (you|who you are|your sense of self)/.test(t)) return 3;
+
+  // Self-evaluation of identity / values
+  if (/what (part|piece|side|aspect) of (you|yourself|who you are) (did|does|has) (that|this|it)/.test(t)) return 3;
+  if (/what (do you make|do you think|would you say) of (all (of )?this|that|it|your (life|story|experience|journey)) (now|today|looking back)?/.test(t)) return 3;
+  if (/why (do you think|is it that) (you|this|that|it) (matters|is important|has stayed|has stuck|keeps coming back)/.test(t)) return 3;
+
+  // "What would you tell/say to someone..." — advice-giving = pure invention
+  if (/what would you (tell|say|give|offer|share with|want) (to )?(someone|a person|anyone|people|others|the next person|a younger you|your younger self)/.test(t)) return 3;
+  if (/what (advice|message|words|wisdom) would you (give|offer|share|pass on|leave)/.test(t)) return 3;
+  if (/if (someone|a person|anyone) (came to you|asked you|was going through|found themselves|were in your shoes)/.test(t)) return 3;
+
+  // Hypothetical / counterfactual self — stepping outside reality
+  if (/if you (could|were able to) go back .{0,60}/.test(t)) return 3;
+  if (/if you (could|had to) (do it (again|over)|change (anything|one thing)|tell (yourself|your younger self))/.test(t)) return 3;
+  if (/what would (you have done|you do) differently/.test(t)) return 3;
+
+  // "Why is [value/identity noun] important/part of who you are?"
+  if (/why (is|are) (being|having|your|a) .{0,50} (a|an|so |part of who you are|core to|central to|define you|matter to you)/.test(t)) return 3;
+
+  // Redefine/reshape/reframe + abstract noun = meaning-making
+  if (/how did (that|it|this|the|your) .{0,60} (redefine|reshape|reframe|transform|alter|shift) (your|how you|the way you|your (understanding|sense|view|concept|idea|definition) of)/.test(t)) return 3;
+  if (/what did (that|it|this|the|your) .{0,60} (redefine|reshape|reframe|transform|mean for) (your|who you|how you|your (understanding|sense|view|concept|idea|definition) of)/.test(t)) return 3;
+
+  // Significance / "The So What" — asks for meaning, not sequence
+  if (/what (is|was) the (significance|meaning|impact|importance|weight|value) of (that|this|it) (for you|to you|in your life)?/.test(t)) return 3;
+  if (/why (is|was) (that|this|it) the story you (chose|wanted|decided) to (tell|share)/.test(t)) return 3;
+  if (/what do you (wish|hope) (you had|others|people|someone|they) (knew|understood|realized|could see)/.test(t)) return 3;
+  if (/what (still|continues to) (stay with|sit with|haunt|move|affect) you/.test(t)) return 3;
+
+  // ── LEVEL 2 — Interpretive / Analytical ─────────────────────────────────
+  // The respondent stays INSIDE the story's timeline but moves beyond bare facts.
+  // They analyze motivations, compare two states, explain how/why something happened,
+  // or trace an evolution within the narrative. They are a character in their own story,
+  // making sense of what happened — not yet evaluating what it means for who they are.
+  //
+  // L1/L2 boundary rule: "What" (even emotional) = L1. "How/Why the connection" = L2.
+  // e.g. "How did you feel?" = L1 (snapshot). "How did those feelings evolve?" = L2.
+
+  // Comparison / contrast between two states or moments
+  if (/how did .{0,60} compare (to|with)/.test(t)) return 2;
+  if (/(compare|contrast) .{0,60} (to|with|and) .{0,60}/.test(t)) return 2;
+  if (/what was (different|similar|the difference|the similarity) (about|between|when|after)/.test(t)) return 2;
+
+  // Causal / motivational analysis — "why did you" within the story
+  if (/why did you (choose|decide|pick|go with|end up|leave|stay|stop|start|take|make|do|say|tell|ask|try)/.test(t)) return 2;
+  if (/what (made|caused|led|pushed|drove|got) you to (decide|choose|go|leave|stay|try|start|stop|do|say|ask)/.test(t)) return 2;
+  if (/what was (going through|on) your mind (when|as|after|before|during)/.test(t)) return 2;
+
+  // Emotional evolution / mechanics — how feelings worked, not just what they were
+  if (/how did (those|your|that|the) (feelings?|emotions?|thoughts?|reaction|response|relationship) (evolve|change|shift|develop|grow|progress|build|worsen|improve)/.test(t)) return 2;
+  if (/how did you (handle|manage|deal with|process|work through|cope with|navigate|get through) (that|it|this|those|the)/.test(t)) return 2;
+  if (/how did (your|the) relationship .{0,50} (change|evolve|develop|shift|grow)/.test(t)) return 2;
+
+  // Specific recall — sequence, logistics, process, details
+  if (/walk me through (the|your (process|steps|what happened|how you|that day|that moment|that time|routine))/.test(t)) return 2;
+  if (/what happened (first|next|then|after|before|when|as soon as)/.test(t)) return 2;
+  if (/how (long|many|often|much|old|far|big|small|frequently)/.test(t)) return 2;
+  if (/can you (be more specific|give me an example|describe|walk me through|take me through|break (that|it) down)/.test(t)) return 2;
+  if (/what (specifically|exactly) (did|was|happened|were|do)/.test(t)) return 2;
+  if (/tell me more about/.test(t)) return 2;
+  if (/what did (you|they|he|she|it) (do|say|decide|choose|respond|react|think|feel) (when|after|before|during|about)/.test(t)) return 2;
+  if (/how did (it|that|you|they|the situation) (work|start|end|begin|unfold|play out|go|happen|come about)/.test(t)) return 2;
+  if (/what (was|were) (the|your) (process|steps|plan|approach|routine|method|strategy|reaction|response)/.test(t)) return 2;
+  if (/do you remember (a time|when|the moment|the first time|what it was like)/.test(t)) return 2;
+  if (/can you (think of|point to|name|give me) a (specific|particular|time|moment|example|instance)/.test(t)) return 2;
+  if (/what (kind|sort|type|kinds|sorts|types) of/.test(t)) return 2;
+  if (/was there a (specific|particular|moment|time|point|reason|person)/.test(t)) return 2;
+  if (/who was (there|involved|with you|present|part of it|responsible|in charge)/.test(t)) return 2;
+  if (/how (would you|do you) describe (that|it|the|your|what|how)/.test(t)) return 2;
+  if (/what (does|did) (your|the) (day|week|role|work|schedule|routine|life) (look|looked) like/.test(t)) return 2;
+
+  // ── LEVEL 1 — Foundational Detail / Direct Recall ───────────────────────
+  // The respondent retrieves a static fact or snapshot from memory.
+  // They are REPORTING, not thinking. There is essentially one correct answer.
+  // Includes emotional snapshots: "How did you feel [then]?" = L1 (data point).
+  // L1 covers chronology, logistics, biographical facts, and yes/no openers.
+
+  // Biographical / chronological facts
+  if (/where (did you|were you|do you) (grow up|live|go to school|work|meet|come from|start)/.test(t)) return 1;
+  if (/when (did|were|was|do|does) .{0,60}(happen|start|begin|end|born|move|leave|arrive|get|become)/.test(t)) return 1;
+  if (/how (old|long ago) (were|was|are|did) you/.test(t)) return 1;
+  if (/who (is|was|are|were) (your|the) .{0,40}(family|parents?|mother|father|siblings?|partner|spouse|children|kids|friends?)/.test(t)) return 1;
+
+  // Emotional snapshot — "how did you feel [at that moment]" = data point
+  if (/how (did you feel|were you feeling|did it feel|did that make you feel|does that make you feel|did (it|that|this) make (you|it)) (when|after|before|during|at|the moment|right)?/.test(t)) return 1;
+  if (/what (was it|did it) (feel|look|seem|sound|taste|smell) like (when|at|during|after|to)/.test(t)) return 1;
+
+  // Broad introductory / scene-setting openers
+  if (/tell me (a little |more )?about (yourself|your (background|life|story|family|work|experience))/.test(t)) return 1;
+  if (/how (are|is|was|were) (things|it|everything|life|school|work|the (family|situation|process))/.test(t)) return 1;
+  if (/what (is|was|'s) (your|a typical|life|it|that) like/.test(t)) return 1;
+  if (/what do you do (for (work|a living|fun)|in your (free time|spare time))?/.test(t)) return 1;
+  if (/what (brings|got|led) you (here|to (this|that)|into (this|that))/.test(t)) return 1;
+  if (/can you (start by|begin by|introduce yourself|give me some background)/.test(t)) return 1;
+  if (/do you want to (talk about|introduce|share|tell me) (yourself|your)/.test(t)) return 1;
+
+  // ── FALLBACK ─────────────────────────────────────────────────────────────
+  // For unmatched questions, use lightweight keyword signals.
+  // Lean up (benefit of the doubt) at L2/L3 boundary per calibration.
   if (t.includes('?')) {
-    // Strong L3 signals in any question
-    if (/\b(to what extent|how confident|what would you say to|if you were (talking|speaking|giving advice)|why do you think you|what is it about (your|you))\b/.test(t)) return 3;
-    // Reflective framing signals L3
-    if (/\b(mean|matter|shaped|changed you|say about|significant|imagine|picture|envision|think it is about|affect you|teach you|fears|mentally|emotionally|different now|go back)\b/.test(t)) return 3;
-    // Specific recall signals L2
-    if (/\b(how|when|where|who|which|describe|walk|specific|example|what kind)\b/.test(t)) return 2;
+    // Temporal bridge or universalizing noun anywhere = L3
+    if (/\b(now|since|nowadays|still|anymore|at this point|these days|back then|hindsight|rearview)\b/.test(t) &&
+        /\b(you|your|yourself|who you are|your life|your story)\b/.test(t)) return 3;
+    // Identity-probing "why" = L3
+    if (/\bwhy\b.{0,60}\b(important|meaningful|matter|value|believe|feel strongly|care|love|hate|fear)\b/.test(t)) return 3;
+    // Wisdom/learning signal = L3
+    if (/\b(learn|wisdom|meaning|impact|changed you|shaped you|realize|come to)\b/.test(t)) return 3;
+    // Causal/comparative/procedural = L2
+    if (/\b(why|how|compare|because|reason|cause|evolve|change|different|decision|choose|process|describe|specific|example|remember|happened)\b/.test(t)) return 2;
     return 1;
   }
   return 0;
