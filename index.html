@@ -1758,9 +1758,15 @@ function parseTranscript(raw, interviewer, respondent) {
       const startsLower = text.length > 0 && text[0] === text[0].toLowerCase() && /[a-z]/.test(text[0]);
       const wordCount2  = text.trim().split(/\s+/).length;
       const hasQuestion = text.includes('?');
+      // Only treat as mis-labeled continuation if the PREVIOUS turn ended mid-sentence
+      // (no closing punctuation). If the prior turn ended with . ? ! the new label
+      // is almost certainly a real new speaker turn, not a runon fragment.
+      const prevText = turns.length > 0 ? turns[turns.length - 1].text.trimEnd() : '';
+      const prevEndedClean = /[.?!]$/.test(prevText);
       const isMislabeledContinuation = startsLower && !hasQuestion && wordCount2 >= 3 &&
                                         turns.length > 0 &&
-                                        turns[turns.length - 1].speaker !== canonical;
+                                        turns[turns.length - 1].speaker !== canonical &&
+                                        !prevEndedClean;
       if (isMislabeledContinuation) {
         // Treat as continuation of the previous turn, log it
         turns[turns.length - 1].text += ' ' + text;
