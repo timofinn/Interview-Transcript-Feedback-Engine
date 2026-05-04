@@ -1639,7 +1639,9 @@ function classifyQuestionLevel(q) {
   //   5. Advice-giving: constructing guidance for someone else = pure invention.
 
   // Temporal bridge — respondent must look back from present seat
-  if (/\b(looking back|in retrospect|with (the benefit of )?hindsight|now that (you|it|that)|since (then|that|all|this)|nowadays|at this point in (your life|time)|from where you (are|stand) now|in the rearview)\b/.test(t)) return 3;
+  // "nowadays" alone = general opinion, not a temporal bridge — requires personal-change anchor
+  if (/\b(looking back|in retrospect|with (the benefit of )?hindsight|now that (you|it|that)|since (then|that|all|this)|at this point in (your life|time)|from where you (are|stand) now|in the rearview)\b/.test(t)) return 3;
+  if (/\bnowadays\b/.test(t) && /\b(you|your|yourself)\b/.test(t) && /\b(changed|grown|become|are|feel|think|see|view|different|still)\b/.test(t) && /\b(compared to|than before|than you used to|back then|used to)\b/.test(t)) return 3;
 
   // Universalizing nouns — signal meaning beyond the specific event
   if (/\b(wisdom|meaning|humanity|purpose|legacy|identity|your (truth|soul|worldview|outlook|perspective on life)|the bigger picture|universal|what it means to be)\b/.test(t)) return 3;
@@ -1666,7 +1668,7 @@ function classifyQuestionLevel(q) {
   if (/why (do you think|is it that) (you|this|that|it) (matters|is important|has stayed|has stuck|keeps coming back)/.test(t)) return 3;
 
   // "What would you tell/say to someone..." — advice-giving = pure invention
-  if (/what would you (tell|say|give|offer|share with|want) (to )?(someone|a person|anyone|people|others|the next person|a younger you|your younger self)/.test(t)) return 3;
+  if (/what would you (tell|say|give|offer|share with|want) (to )?(someone|a person|anyone|people|others|the next person|a younger you|your younger self|a younger version of yourself|yourself)/.test(t)) return 3;
   if (/what (advice|message|words|wisdom) would you (give|offer|share|pass on|leave)/.test(t)) return 3;
   if (/if (someone|a person|anyone) (came to you|asked you|was going through|found themselves|were in your shoes)/.test(t)) return 3;
 
@@ -1739,6 +1741,13 @@ function classifyQuestionLevel(q) {
   if (/was there a (specific|particular|moment|time|point|reason|person)/.test(t)) return 2;
   if (/who was (there|involved|with you|present|part of it|responsible|in charge)/.test(t)) return 2;
   if (/how (would you|do you) describe (that|it|the|your|what|how)/.test(t)) return 2;
+  // "How would you say [your experience / the situation / the school] was/is/has been?" — evaluative assessment = L2
+  if (/how would you say (was|were|is|are|has|have|the|your|our|it|that|this)\b/.test(t)) return 2;
+  // "How has/have [experience/thing] been?" — evaluative assessment of a period = L2
+  if (/how has (that|this|it|the|your|that experience|the experience|that process|the transition|that journey|working here|being here|teaching here|being new)\b/.test(t)) return 2;
+  if (/how have (things|you|they|people|teachers|students|it)\b.{0,40}(been|gone|worked out|played out)\b/.test(t)) return 2;
+  // "How well does/did [institution/person] [do X]?" — performance evaluation = L2
+  if (/how well (would|do|did|does|has|have|can|could) (you|the|a|they|it|that|this|he|she)\b/.test(t)) return 2;
   if (/what (does|did) (your|the) (day|week|role|work|schedule|routine|life) (look|looked) like/.test(t)) return 2;
 
   // ── LEVEL 1 — Foundational Detail / Direct Recall ───────────────────────
@@ -1748,7 +1757,8 @@ function classifyQuestionLevel(q) {
   // L1 covers chronology, logistics, biographical facts, and yes/no openers.
 
   // Biographical / chronological facts
-  if (/where (did you|were you|do you) (grow up|live|go to school|work|meet|come from|start)/.test(t)) return 1;
+  if (/where (did you|were you|do you) (grow up|live|go to school|work|meet|come from|start|when|at the time)/.test(t)) return 1;
+  if (/where were you when\b/.test(t)) return 1;
   if (/when (did|were|was|do|does) .{0,60}(happen|start|begin|end|born|move|leave|arrive|get|become)/.test(t)) return 1;
   if (/how (old|long ago) (were|was|are|did) you/.test(t)) return 1;
   if (/who (is|was|are|were) (your|the) .{0,40}(family|parents?|mother|father|siblings?|partner|spouse|children|kids|friends?)/.test(t)) return 1;
@@ -1756,6 +1766,12 @@ function classifyQuestionLevel(q) {
   // Emotional snapshot — "how did you feel [at that moment]" = data point
   if (/how (did you feel|were you feeling|did it feel|did that make you feel|does that make you feel|did (it|that|this) make (you|it)) (when|after|before|during|at|the moment|right)?/.test(t)) return 1;
   if (/what (was it|did it) (feel|look|seem|sound|taste|smell) like (when|at|during|after|to)/.test(t)) return 1;
+
+  // Snapshot opinions about external things/places/situations — L1 even if phrased "how do you feel about X"
+  // Key: the subject is outside the respondent (school, system, district, class, policy, people, AI, etc.)
+  // "How do you feel about [thing]?" = snapshot opinion, not emotional evolution
+  if (/how do you feel about (the|a|an|your|our|this|that|it|teaching|school|class|work|education|ai|technology|students|staff|district|policy|budget|strike|decision|change|situation|system|community|society|culture|life|world)\b/.test(t)) return 1;
+  if (/how (are|do) you feel(ing)? (about|toward|towards|on|regarding|concerning|with respect to) (the|a|an|your|our|this|that)\b/.test(t)) return 1;
 
   // Broad introductory / scene-setting openers
   if (/tell me (a little |more )?about (yourself|your (background|life|story|family|work|experience))/.test(t)) return 1;
@@ -1770,15 +1786,18 @@ function classifyQuestionLevel(q) {
   // For unmatched questions, use lightweight keyword signals.
   // Lean up (benefit of the doubt) at L2/L3 boundary per calibration.
   if (t.includes('?')) {
-    // Temporal bridge or universalizing noun anywhere = L3
+    // Temporal bridge = L3 only when paired with personal-change/present-self words
+    // "since they have years working" is NOT a temporal bridge — it's causal context
+    // "since then, who are you now?" IS a temporal bridge
     if (/\b(now|since|nowadays|still|anymore|at this point|these days|back then|hindsight|rearview)\b/.test(t) &&
-        /\b(you|your|yourself|who you are|your life|your story)\b/.test(t)) return 3;
+        /\b(changed|grown|become|are you|are now|who you are|your life now|your story|different person|still the same|evolved|shaped)\b/.test(t)) return 3;
     // Identity-probing "why" = L3
     if (/\bwhy\b.{0,60}\b(important|meaningful|matter|value|believe|feel strongly|care|love|hate|fear)\b/.test(t)) return 3;
     // Wisdom/learning signal = L3
     if (/\b(learn|wisdom|meaning|impact|changed you|shaped you|realize|come to)\b/.test(t)) return 3;
     // Causal/comparative/procedural = L2
-    if (/\b(why|how|compare|because|reason|cause|evolve|change|different|decision|choose|process|describe|specific|example|remember|happened)\b/.test(t)) return 2;
+    // NOTE: "how" removed — too greedy, catches snapshot questions like "how do you feel about X"
+    if (/\b(why|compare|because|reason|cause|evolve|change|different|decision|choose|process|describe|specific|example|remember|happened)\b/.test(t)) return 2;
     return 1;
   }
   return 0;
