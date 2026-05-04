@@ -490,6 +490,87 @@
   .legend-text strong { display: block; font-size: 8.5pt; }
   .legend-text span { color: #777; font-size: 8pt; font-style: italic; }
 
+  /* ─── Question Level Framework card ─── */
+  .framework-card {
+    background: #f5f3ec;
+    border: 1px solid #ddd9cc;
+    border-radius: 6px;
+    padding: 20px 24px 18px 24px;
+    margin-bottom: 32px;
+  }
+  .framework-card h2 {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 16px;
+  }
+  .framework-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 700px) { .framework-grid { grid-template-columns: 1fr; } }
+  .framework-level {
+    border-radius: 5px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .framework-level-l1 { background: #d0ecf7; border: 1px solid #2176ae; }
+  .framework-level-l2 { background: #dff5e1; border: 1px solid #2a7a40; }
+  .framework-level-l3 { background: #e8d5f5; border: 1px solid #7b3fa0; }
+  .framework-level-badge {
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .fw-badge-l1 { color: #0d4a72; }
+  .fw-badge-l2 { color: #1e5c30; }
+  .fw-badge-l3 { color: #4a1a70; }
+  .framework-level-title {
+    font-family: Georgia, serif;
+    font-size: 11pt;
+    font-weight: bold;
+    line-height: 1.2;
+  }
+  .fw-title-l1 { color: #0d4a72; }
+  .fw-title-l2 { color: #1e5c30; }
+  .fw-title-l3 { color: #4a1a70; }
+  .framework-level-tagline {
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    font-style: italic;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  .framework-level-def {
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #333;
+    line-height: 1.5;
+  }
+  .framework-level-ex {
+    font-family: Georgia, serif;
+    font-size: 8pt;
+    color: #555;
+    font-style: italic;
+    line-height: 1.5;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding-top: 6px;
+    margin-top: 2px;
+  }
+  .framework-level-ex::before {
+    content: 'e.g. ';
+    font-weight: bold;
+    font-style: normal;
+  }
+
   /* ─── Annotated transcript ─── */
   .transcript-section { margin-bottom: 36px; }
   .transcript-section h2 {
@@ -858,6 +939,31 @@ Finn: You ever try flying a plane while building it?"></textarea>
     <div class="legend-section" id="legendSection">
       <h2>Color-Coded Legend — Listening &amp; Structural Moves</h2>
       <div class="legend-grid" id="legendGrid"></div>
+    </div>
+
+    <!-- QUESTION LEVEL FRAMEWORK -->
+    <div class="framework-card" id="frameworkCard">
+      <h2>Interview Questioning Framework</h2>
+      <div class="framework-grid">
+        <div class="framework-level framework-level-l1">
+          <div class="framework-level-badge fw-badge-l1">Level 1</div>
+          <div class="framework-level-title fw-title-l1">Reporting<br><span style="font-size:9pt;font-weight:normal;">(The "What")</span></div>
+          <div class="framework-level-def">Questions that ask for factual snapshots, biographical data, or specific sensory memories. The respondent reports — they don't have to interpret or evaluate.</div>
+          <div class="framework-level-ex">"Where were you when you heard?" or "How did you feel in that moment?"</div>
+        </div>
+        <div class="framework-level framework-level-l2">
+          <div class="framework-level-badge fw-badge-l2">Level 2</div>
+          <div class="framework-level-title fw-title-l2">Analyzing<br><span style="font-size:9pt;font-weight:normal;">(The "How/Why")</span></div>
+          <div class="framework-level-def">Questions that ask the respondent to connect dots, compare events, or explain the mechanics of an emotion — while still inside the story's timeline.</div>
+          <div class="framework-level-ex">"How did those feelings change over the next week?" or "Why did you choose that treatment over the other?"</div>
+        </div>
+        <div class="framework-level framework-level-l3">
+          <div class="framework-level-badge fw-badge-l3">Level 3</div>
+          <div class="framework-level-title fw-title-l3">Meaning-Making<br><span style="font-size:9pt;font-weight:normal;">(The "So What")</span></div>
+          <div class="framework-level-def">Questions that require a "temporal shift" — asking the respondent to step outside the story and look back from the present to evaluate their identity, wisdom, or what the experience made true.</div>
+          <div class="framework-level-ex">"Looking back, how did that reshape who you are?" or "What does being 'brave' mean to you now?"</div>
+        </div>
+      </div>
     </div>
 
     <!-- ANNOTATED TRANSCRIPT -->
@@ -1576,6 +1682,17 @@ function classifyQuestionLevel(q) {
   if (/how did (that|it|this|the|your) .{0,60} (redefine|reshape|reframe|transform|alter|shift) (your|how you|the way you|your (understanding|sense|view|concept|idea|definition) of)/.test(t)) return 3;
   if (/what did (that|it|this|the|your) .{0,60} (redefine|reshape|reframe|transform|mean for) (your|who you|how you|your (understanding|sense|view|concept|idea|definition) of)/.test(t)) return 3;
 
+  // "Why do you think you are/were [trait]?" — identity probe
+  if (/why do you think (you'?re|you are|you were|you've been|you have been|you can|you could) (so |such |a )?(resilient|strong|capable|determined|patient|stubborn|quiet|independent|driven|afraid|reluctant|drawn to|drawn toward|hard on yourself|the way you are)/.test(t)) return 3;
+  // "Why do you think [X] has stayed with you / matters to you?" — meaning-making
+  if (/why do you think .{0,60} (has stayed|have stayed|still (stays|sits|lives|resonates)|keeps coming back|matters|is important|means so much|has meant) (with you|to you|for you)?/.test(t)) return 3;
+  // "Why do you think you kept going / persisted / survived?" — resilience/identity
+  if (/why do you think (you )?(kept|keep|managed to|were able to|could|continued to) .{0,40}(going|pushing|surviving|persisting|trying|fighting|holding on|showing up|getting up|moving forward)/.test(t)) return 3;
+  // "Why do you think [abstract quality] matters to you?"
+  if (/why do you think .{0,30}(resilience|strength|faith|family|community|connection|love|purpose|belonging|identity|courage|sacrifice|loyalty|justice|freedom) (matters|is important|means so much|defines you|drives you)/.test(t)) return 3;
+  // "Why did that [change/affect/shape] you?" — transformation signal
+  if (/why did (that|it|this|the) .{0,40} (change|affect|shape|define|transform|mark|leave a mark on|stay with) you/.test(t)) return 3;
+
   // Significance / "The So What" — asks for meaning, not sequence
   if (/what (is|was) the (significance|meaning|impact|importance|weight|value) of (that|this|it) (for you|to you|in your life)?/.test(t)) return 3;
   if (/why (is|was) (that|this|it) the story you (chose|wanted|decided) to (tell|share)/.test(t)) return 3;
@@ -2244,9 +2361,9 @@ const MOVE_TIPS = {
   circling:    'You looped back to an earlier comment, showing you\'ve been tracking the story.',
   bridge:      'You used their response as a segue to the next topic. Advanced move.',
   pivot:       'Shifted gears without making it weird. This one takes skill.',
-  l1:          'Easy-breezy, low-stakes opener. Good for warming up. Use them as launching boards.',
-  l2:          'Got them going: recalling specific memories, names, places, details. Often opens a door to L3.',
-  l3:          'Evocative, thought-provoking questions that demand invention or reflection from your respondent.',
+  l1:          'Reporting question — you asked for a fact, snapshot, or memory. Good for warming up or grounding the story.',
+  l2:          'Analyzing question — you asked them to connect dots or explain how/why within the story. Builds toward L3.',
+  l3:          'Meaning-Making question — you asked them to step outside the story and evaluate. This is where the real stuff lives.',
 };
 
 function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMoves) {
@@ -2337,7 +2454,7 @@ function buildInterviewerHtml(rawText, moveKeys, level, isFollowup, emergingMove
       const tip = MOVE_TIPS[range.key] || '';
       html += `<span class="highlight hl-${range.key}">${matchEscaped}</span><span class="tag-wrap"><span class="tag tag-${range.key}">${range.label}</span>${tip ? `<span class="tag-tip">${tip}</span>` : ''}</span>`;
     } else if (range.renderType === 'level') {
-      const levelLabels = { 1: 'L1 — Open the Door', 2: 'L2 — Gather Details', 3: 'L3 — Unlock the Meaning' };
+      const levelLabels = { 1: 'L1 — Reporting', 2: 'L2 — Analyzing', 3: 'L3 — Meaning-Making' };
       const lLabel = levelLabels[range.level] || `L${range.level}`;
       const followupTag = range.isFollowup ? `<span class="tag tag-followup">Follow-up Question</span>` : '';
       const levelTip = MOVE_TIPS['l' + range.level] || '';
@@ -2777,24 +2894,24 @@ function analyze() {
     <div class="level-track">
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L1 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Open the Door — Safe, broad, tone-setting questions that invite the respondent in.</span></span></span>
-          <span class="level-sublabel">Open the Door</span>
+          <span class="level-label">L1 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Reporting — The "What." Factual snapshots, biographical data, emotional moments in the timeline.</span></span></span>
+          <span class="level-sublabel">Reporting</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l1" style="width:${Math.round(l1/maxL*100)}%"></div></div>
         <span class="level-count">${l1}</span>
       </div>
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L2 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Gather Details — Questions that ask for specifics: sequence, names, dates, process.</span></span></span>
-          <span class="level-sublabel">Gather Details</span>
+          <span class="level-label">L2 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Analyzing — The "How/Why." Connecting dots, comparing events, explaining emotion within the story.</span></span></span>
+          <span class="level-sublabel">Analyzing</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l2" style="width:${Math.round(l2/maxL*100)}%"></div></div>
         <span class="level-count">${l2}</span>
       </div>
       <div class="level-bar-row">
         <div class="level-label-col">
-          <span class="level-label">L3 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Unlock the Meaning — Questions that push toward reflection, significance, and change.</span></span></span>
-          <span class="level-sublabel">Unlock Meaning</span>
+          <span class="level-label">L3 <span class="score-info" style="font-size:7pt;">?<span class="score-tooltip" style="width:190px;">Meaning-Making — The "So What." Temporal shift: respondent steps outside the story to find identity, wisdom, or truth.</span></span></span>
+          <span class="level-sublabel">Meaning-Making</span>
         </div>
         <div class="level-bar-bg"><div class="level-bar-l3" style="width:${Math.round(l3/maxL*100)}%"></div></div>
         <span class="level-count">${l3}</span>
@@ -3021,19 +3138,19 @@ function analyze() {
         ${structMoves.map(buildMoveItem).join('')}
       </div>
       <div style="margin-top:18px;">
-        <div class="legend-col-header">Question Depth</div>
+        <div class="legend-col-header">Highlight Colors</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
           <div class="legend-item" style="align-items:flex-start;">
             <div class="legend-swatch hl-l1" style="min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
-            <div class="legend-text"><strong style="font-size:8.5pt;">L1 — Open the Door</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">Safe, general, tone-setting — good for warming up.</span></div>
+            <div class="legend-text"><strong style="font-size:8.5pt;">L1 — Reporting</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">The "What" — facts, snapshots, scene-setting.</span></div>
           </div>
           <div class="legend-item" style="align-items:flex-start;">
             <div class="legend-swatch hl-l2" style="min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
-            <div class="legend-text"><strong style="font-size:8.5pt;">L2 — Gather Details</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">Specifics, sequence, recall — builds the story.</span></div>
+            <div class="legend-text"><strong style="font-size:8.5pt;">L2 — Analyzing</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">The "How/Why" — connecting dots within the story.</span></div>
           </div>
           <div class="legend-item" style="align-items:flex-start;">
             <div class="legend-swatch hl-l3" style="min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
-            <div class="legend-text"><strong style="font-size:8.5pt;">L3 — Unlock the Meaning</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">Reflection, significance, "why it matters" — the good stuff.</span></div>
+            <div class="legend-text"><strong style="font-size:8.5pt;">L3 — Meaning-Making</strong><span style="color:#555;font-size:7.5pt;font-style:normal;">The "So What" — stepping outside the story to find truth.</span></div>
           </div>
           <div class="legend-item" style="align-items:flex-start;">
             <div class="legend-swatch" style="background:#f9f200;border:1px solid #d4c800;border-radius:2px;min-width:14px;height:14px;margin-top:3px;flex-shrink:0;"></div>
