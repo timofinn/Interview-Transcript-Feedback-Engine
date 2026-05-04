@@ -1650,7 +1650,7 @@ function parseTranscript(raw, interviewer, respondent) {
   };
 
   let cleaned = raw
-    .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/[\u2028\u2029]/g, '\n')
     .replace(/[﻿￾‌‍‎‏⁠⁡⁢⁣⁤­]/g, '')
     .replace(/[   -   　]/g, ' ')
     .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
