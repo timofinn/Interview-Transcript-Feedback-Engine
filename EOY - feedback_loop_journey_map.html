@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #fdf8f0;
+    font-family: 'Georgia', serif;
+    padding: 30px 20px;
+    min-height: 100vh;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    color: #3a3a3a;
+    font-weight: normal;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #c8a96e;
+    display: inline-block;
+    padding-bottom: 6px;
+  }
+  .header p {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .timeline {
+    position: relative;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 10px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #c8a96e 0px,
+      #c8a96e 8px,
+      transparent 8px,
+      transparent 14px
+    );
+    transform: translateX(-50%);
+  }
+  .stop {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .stop.left { flex-direction: row-reverse; }
+  .card {
+    width: 42%;
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 2px 3px 10px rgba(0,0,0,0.08);
+    position: relative;
+    border-left: 4px solid #c8a96e;
+  }
+  .stop.left .card {
+    border-left: none;
+    border-right: 4px solid #c8a96e;
+    text-align: right;
+  }
+  .card h3 {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #2e2e2e;
+    margin-bottom: 5px;
+  }
+  .card p {
+    font-size: 0.82rem;
+    color: #555;
+    line-height: 1.55;
+  }
+  .card .emoji-label {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .node {
+    width: 16%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 10px;
+    flex-shrink: 0;
+  }
+  .node-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #c8a96e;
+    background: #fff;
+    z-index: 1;
+  }
+  .node-label {
+    font-size: 0.65rem;
+    color: #999;
+    margin-top: 5px;
+    text-align: center;
+    font-style: italic;
+  }
+  .spacer { width: 42%; }
+
+  .stop-problem .node-circle  { background: #fff3e0; box-shadow: 0 0 0 2px #e0a060; }
+  .stop-companion .node-circle { background: #e8f4fd; box-shadow: 0 0 0 2px #5b9bd5; }
+  .stop-paywall .node-circle   { background: #fdecea; box-shadow: 0 0 0 2px #d9534f; }
+  .stop-build .node-circle     { background: #edf7ee; box-shadow: 0 0 0 2px #5cb85c; }
+  .stop-iterate .node-circle   { background: #f3eeff; box-shadow: 0 0 0 2px #9b59b6; }
+  .stop-deploy .node-circle    { background: #fff8e1; box-shadow: 0 0 0 2px #f0ad4e; }
+  .stop-simple .node-circle    { background: #e8f8f5; box-shadow: 0 0 0 2px #1abc9c; }
+
+  .stop-paywall .card { border-left-color: #d9534f; }
+  .stop.left.stop-paywall .card { border-right-color: #d9534f; border-left: none; }
+  .stop-simple .card { border-left-color: #1abc9c; }
+
+  .footnote {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 0.78rem;
+    color: #aaa;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>2025–2026 | The Feedback Loop Problem</h1>
+  <p>Tim Finnigan &middot; Pinole Valley High School &middot; TIP Year 2 &middot; CSTP 5</p>
+</div>
+
+<div class="timeline">
+
+  <div class="stop stop-problem">
+    <div class="card">
+      <span class="emoji-label">🔍</span>
+      <h3>The Problem Identified</h3>
+      <p>Feedback loops were too slow. By the time students got a response on their writing, the moment had passed. The goal: close the gap between submission and insight.</p>
+    </div>
+    <div class="node stop-problem">
+      <div class="node-circle">🔍</div>
+      <div class="node-label">Fall '25</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop left stop-companion">
+    <div class="card">
+      <span class="emoji-label">🤖</span>
+      <h3>Enter: Classroom Companion</h3>
+      <p>An AI-powered feedback tool. Students submit drafts, get near-instant rubric-based feedback, then revise. Promising in theory — and genuinely useful in practice, when it worked.</p>
+    </div>
+    <div class="node stop-companion">
+      <div class="node-circle">🤖</div>
+      <div class="node-label">Oct '25</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop stop-paywall">
+    <div class="card">
+      <span class="emoji-label">🚧</span>
+      <h3>The Paywall Problem</h3>
+      <p>Monthly subscription. Teacher salary. You do the math. Ultimately unsustainable — had to jump ship. The tool showed real promise, but the model wasn't built for educators without a budget.</p>
+    </div>
+    <div class="node stop-paywall">
+      <div class="node-circle">🚧</div>
+      <div class="node-label">Nov '25</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop left stop-build">
+    <div class="card">
+      <span class="emoji-label">🛠️</span>
+      <h3>Fine. I'll Build It.</h3>
+      <p>Developed the Transcript Analyzer from scratch — a custom tool that reads student interview transcripts and tags question types across three levels of inquiry. Level 1 ice-breakers through Level 3 reflective, meaning-making questions.</p>
+    </div>
+    <div class="node stop-build">
+      <div class="node-circle">🛠️</div>
+      <div class="node-label">Dec '25&ndash;Feb '26</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop stop-iterate">
+    <div class="card">
+      <span class="emoji-label">🐛</span>
+      <h3>Debug. Push. Repeat.</h3>
+      <p>Hours of regex pattern-matching. Mock transcripts. Broken builds. Commits and patches. The gap between "it works" and "it actually works with real student submissions" turned out to be substantial.</p>
+    </div>
+    <div class="node stop-iterate">
+      <div class="node-circle">🐛</div>
+      <div class="node-label">Feb&ndash;Mar '26</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop left stop-deploy">
+    <div class="card">
+      <span class="emoji-label">🚀</span>
+      <h3>Deployed with Students</h3>
+      <p>Ran the Analyzer at the end of Unit 6. Students got annotated transcripts with scored question levels. Immediately noticed: most scrolled straight to their score. Back to the drawing board on presentation — but the engine worked.</p>
+    </div>
+    <div class="node stop-deploy">
+      <div class="node-circle">🚀</div>
+      <div class="node-label">Apr '26</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="stop stop-simple">
+    <div class="card">
+      <span class="emoji-label">💡</span>
+      <h3>Sometimes the Best Tool Is You</h3>
+      <p>Live, on-the-spot verbal demonstrations. Student explains the concept. Teacher responds in real time. Feedback loop: immediate. Cost: zero. The gap closes the second they try it out loud and hear where they went wrong.</p>
+    </div>
+    <div class="node stop-simple">
+      <div class="node-circle">💡</div>
+      <div class="node-label">May '26</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+</div>
+
+<div class="footnote">TIP End-of-Year Reflection &middot; Visual Component &middot; 2025&ndash;2026</div>
+
+</body>
+</html>
